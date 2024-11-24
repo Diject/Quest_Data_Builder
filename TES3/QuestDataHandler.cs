@@ -137,7 +137,7 @@ namespace Quest_Data_Builder.TES3
                     if (questTopic is null)
                     {
                         CustomLogger.WriteLine(LogLevel.Warn, $"cannot find \"{questIndex}\" index for \"{questName}\" dialog");
-                        break;
+                        continue;
                     }
 
                     function(match.Groups[0].Value, questTopic);
@@ -147,7 +147,7 @@ namespace Quest_Data_Builder.TES3
                 else
                 {
                     CustomLogger.WriteLine(LogLevel.Warn, $"cannot find \"{questName}\" dialog");
-                    break;
+                    continue;
                 }
             }
             return ret;
