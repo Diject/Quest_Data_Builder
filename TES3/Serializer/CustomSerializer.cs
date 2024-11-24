@@ -297,7 +297,6 @@ namespace Quest_Data_Builder.TES3.Serializer
             {
                 var objectTable = newTable();
                 objectTable.Add("type", (int)objectItem.Value.Type);
-                objectTable.Add("inWorld", objectItem.Value.Positions.Count);
 
                 if (objectItem.Value.Starts.Count > 0)
                 {
@@ -348,7 +347,13 @@ namespace Quest_Data_Builder.TES3.Serializer
                         }
                         objPosArray.Add(objPosTable);
                     }
+
+                    objectTable.Add("inWorld", objPos.Count);
                     objectTable.Add("positions", objPosArray);
+                }
+                else
+                {
+                    objectTable.Add("inWorld", 0);
                 }
 
                 if (objectItem.Value.Contains.Count > 0)
