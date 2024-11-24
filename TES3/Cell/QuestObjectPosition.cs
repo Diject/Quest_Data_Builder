@@ -49,23 +49,30 @@ namespace Quest_Data_Builder.TES3.Cell
 
             questObject.AddPosition(cellPos);
 
-            string questObjectId = questObject.OriginId ?? questObject.ObjectId;
-
-            if (base.TryGetValue(cell.UniqueName, out var cellDictionary))
+            List<string> objectIds = new() { questObject.ObjectId  };
+            if (questObject.OriginId is not null)
             {
-                if (cellDictionary.TryGetValue(questObjectId, out var cellObjDictionary))
+                objectIds.Add(questObject.OriginId);
+            }
+
+            foreach (var questObjectId in objectIds)
+            {
+                if (base.TryGetValue(cell.UniqueName, out var cellDictionary))
                 {
-                    cellObjDictionary.Add(cellPos);
+                    if (cellDictionary.TryGetValue(questObjectId, out var cellObjDictionary))
+                    {
+                        cellObjDictionary.Add(cellPos);
+                    }
+                    else
+                    {
+                        cellDictionary.Add(questObjectId, new() { cellPos });
+                    }
+
                 }
                 else
                 {
-                    cellDictionary.Add(questObjectId, new() { cellPos });
+                    base.Add(cell.UniqueName, new(StringComparer.OrdinalIgnoreCase) { { questObjectId, new() { cellPos } } });
                 }
-                
-            }
-            else
-            {
-                base.Add(cell.UniqueName, new(StringComparer.OrdinalIgnoreCase) { { questObjectId, new() { cellPos } } });
             }
         }
     }
