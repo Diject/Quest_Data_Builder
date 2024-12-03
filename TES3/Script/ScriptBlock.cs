@@ -168,6 +168,7 @@ namespace Quest_Data_Builder.TES3.Script
                             qReq.Type = RequirementType.CustomScript;
                             this.ScriptId = labelVariable;
                             qReq.Variable = labelVariable;
+                            qReq.Script = labelVariable;
                             AddRequirement(qReq);
                         }
 
