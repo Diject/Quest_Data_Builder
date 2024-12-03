@@ -130,7 +130,9 @@ namespace Quest_Data_Builder
             File.WriteAllText(Path.Combine([outputDirPath, "localVariables.json"]), jsonSer.LocalVariableDataByScriptId());
 
             File.WriteAllText(Path.Combine([outputDirPath, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations);
+            File.WriteAllText(Path.Combine([outputDirPath, "info.lua"]), "return " + (new GeneratedDataInfo(morrowindFiles).ToString()));
 
+            CustomLogger.WriteLine(LogLevel.Error, "Done");
         }
 
         public class Options

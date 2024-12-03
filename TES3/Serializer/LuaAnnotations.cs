@@ -67,8 +67,6 @@ namespace Quest_Data_Builder.TES3.Serializer
 ---@field results table<string, questDataGenerator.requirementBlock[]>
 
 ---@alias questDataGenerator.localVariableByQuestId table<string, table<string, questDataGenerator.localVariableData>>
-
-local version = 1
-return version";
+";
     }
 }
