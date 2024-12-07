@@ -22,6 +22,7 @@ namespace Quest_Data_Builder
         static void Main(string[] args)
         {
             CustomLogger.Level = LogLevel.Warn;
+            int maximumNumberOfObjectPositions = 50;
 
 
             var outputDirPath = "";
@@ -29,6 +30,11 @@ namespace Quest_Data_Builder
 
             var options = Parser.Default.ParseArguments<Options>(args).WithParsed(options =>
             {
+                if (options.MaximumNumberOfObjectPositions is not null)
+                {
+                    maximumNumberOfObjectPositions = (int)options.MaximumNumberOfObjectPositions;
+                }
+
                 if (options.LogLevel is not null)
                 {
                     CustomLogger.Level = (LogLevel)options.LogLevel;
@@ -121,6 +127,7 @@ namespace Quest_Data_Builder
 
 
             var jsonSer = new CustomSerializer(SerializerType.Json, dataProcessor);
+            jsonSer.MaximumObjectPositions = maximumNumberOfObjectPositions;
             File.WriteAllText(Path.Combine([outputDirPath, "quests.json"]), jsonSer.QuestData());
             //File.WriteAllText(Path.Combine([outputDirPath, "questByTopicId.json"]), jsonSer.TopicById());
             File.WriteAllText(Path.Combine([outputDirPath, "questByTopicText.json"]), jsonSer.QuestByTopicText());
@@ -150,6 +157,9 @@ namespace Quest_Data_Builder
 
             [Option('o', "output", Required = false, HelpText = "Output directory for result data. If doesn't set, the data will be placed in the parser directory.")]
             public string? Output { get; set; }
+
+            [Option('p', "maxPos", Required = false, HelpText = "Maximum number of positions for an object.")]
+            public int? MaximumNumberOfObjectPositions { get; set; }
         }
 
         [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?) *$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
