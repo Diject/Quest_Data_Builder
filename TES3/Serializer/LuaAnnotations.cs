@@ -45,7 +45,7 @@ namespace Quest_Data_Builder.TES3.Serializer
 --- @alias questDataGenerator.questObjectType integer
 
 ---@class questDataGenerator.objectPosition
----@field type questDataGenerator.questObjectType
+---@field type questDataGenerator.questObjectType|nil
 ---@field pos number[]
 ---@field name string|nil
 ---@field grid integer[]|nil
@@ -60,7 +60,8 @@ namespace Quest_Data_Builder.TES3.Serializer
 ---@field starts string[]|nil
 ---@field stages questDataGenerator.questTopicInfo[]
 ---@field positions questDataGenerator.objectPosition[]
----@field links string[]
+---@field links string[]|nil
+---@field contains string[]|nil
 
 ---@class questDataGenerator.localVariableData
 ---@field type integer

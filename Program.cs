@@ -100,6 +100,8 @@ namespace Quest_Data_Builder
                 recordData[0].Merge(data);
             }
             recordData[0].RemoveDeletedRecords();
+            recordData[0].AddItemsFromLeveledListsToObjects();
+
             var dataProcessor = new QuestDataHandler(recordData[0]);
 
             if (CustomLogger.Level >= LogLevel.Info)

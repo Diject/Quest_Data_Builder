@@ -43,10 +43,14 @@ namespace Quest_Data_Builder.TES3.Quest
         public readonly HashSet<QuestHandler> Starts = new();
 
         /// <summary>
-        /// Ids of objects that this container owns. For "Owner" and "ScriptData" types
+        /// Ids of objects that this container owns
         /// </summary>
         public readonly HashSet<string> Contains = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// Ids of objects that owns this object. Not for script types
+        /// </summary>
+        public readonly HashSet<string> Links = new(StringComparer.OrdinalIgnoreCase);
 
         public QuestObject(string objectId)
         {
@@ -77,6 +81,12 @@ namespace Quest_Data_Builder.TES3.Quest
         public void AddPosition(QuestObjectPosition position)
         {
             Positions.Add(position);
+        }
+
+        public void AddContainedObjectId(QuestObject qObject)
+        {
+            Contains.Add(qObject.ObjectId);
+            qObject.Links.Add(this.ObjectId);
         }
 
         public void AddContainedObjectId(string id)
@@ -128,7 +138,7 @@ namespace Quest_Data_Builder.TES3.Quest
 
             if (base.TryGetValue(ownerId, out var qObject))
             {
-                qObject.AddContainedObjectId(objectId);
+                qObject.AddContainedObjectId(questObject);
                 foreach (var qStage in questObject.InvolvedQuestStages)
                 {
                     qObject.AddStage(qStage.Item1, qStage.Item2);
@@ -139,7 +149,7 @@ namespace Quest_Data_Builder.TES3.Quest
             {
                 var newObj = new QuestObject(ownerId, objType, questObject.ObjectId);
                 newObj.InvolvedQuestStages.AddRange(questObject.InvolvedQuestStages);
-                newObj.AddContainedObjectId(objectId);
+                newObj.AddContainedObjectId(questObject);
                 base.Add(ownerId, newObj);
                 return newObj;
             }

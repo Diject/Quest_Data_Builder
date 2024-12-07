@@ -22,6 +22,7 @@ namespace Quest_Data_Builder.TES3
         public Dictionary<string, ContainerRecord> Containers = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, CellRecord> Cells = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, RecordWithScript> RecordsWithScript = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, LeveledItem> LeveledItems = new(StringComparer.OrdinalIgnoreCase);
 
         public RecordDataHandler(TES3DataFile master)
         {
@@ -77,6 +78,13 @@ namespace Quest_Data_Builder.TES3
                     var record = new CellRecord(recordData);
                     this.Cells.Add(record.UniqueName, record);
                 }
+
+            if (master.Records.ContainsKey(RecordType.LeveledItem))
+                foreach (var recordData in master.Records[RecordType.LeveledItem])
+                {
+                    var record = new LeveledItem(recordData);
+                    this.LeveledItems.Add(record.Id, record);
+                }
         }
 
         public void IterateObjectPositionsFromCells(QuestObjectById objectsToFind, Action<CellRecord, CellReference, QuestObject> action)
@@ -116,6 +124,75 @@ namespace Quest_Data_Builder.TES3
                     if (objectsToFind.TryGetValue(itemInfo.Key, out var questObject))
                     {
                         action(itemInfo.Key, container, questObject, itemInfo.Value);
+                    }
+                }
+            }
+        }
+
+        public HashSet<string>? GetItemIdsFromLeveledList(string id)
+        {
+            this.LeveledItems.TryGetValue(id, out var levItems);
+            if (levItems is not null)
+            {
+                HashSet<string> items = new();
+                foreach (var itemId in levItems.CarriedItems)
+                {
+                    if (this.LeveledItems.ContainsKey(itemId))
+                    {
+                        var nested = GetItemIdsFromLeveledList(itemId);
+                        if (nested is not null)
+                        {
+                            items.UnionWith(nested);
+                        }
+                    }
+                    else
+                    {
+                        items.Add(itemId);
+                    }
+                }
+                return items;
+            }
+
+            return null;
+        }
+
+        public void AddItemsFromLeveledListsToObjects()
+        {
+            Dictionary<string, HashSet<string>> itemsByLevListId = new();
+
+            foreach (var levListId in this.LeveledItems.Keys)
+            {
+                var items = this.GetItemIdsFromLeveledList(levListId);
+                if (items is not null)
+                {
+                    itemsByLevListId.Add(levListId, items);
+                }
+            }
+
+            foreach (var container in this.Containers.Values)
+            {
+                foreach (var carriedId in container.CarriedItems.Keys.ToList())
+                {
+                    if (itemsByLevListId.TryGetValue(carriedId, out var levItems))
+                    {
+                        foreach (var itemId in levItems)
+                        {
+                            container.CarriedItems.TryAdd(itemId, 1);
+                        }
+                    }
+                }
+            }
+
+            foreach (var actor in this.Actors.Values)
+            {
+                foreach (var carriedId in actor.CarriedItems.Keys.ToList())
+                {
+                    if (itemsByLevListId.TryGetValue(carriedId, out var levItems))
+                    {
+                        foreach (var itemId in levItems)
+                        {
+                            actor.CarriedItems.TryAdd(itemId, 1);
+                        }
                     }
                 }
             }
@@ -194,6 +271,18 @@ namespace Quest_Data_Builder.TES3
                     this.RecordsWithScript.Add(newItem.Key, newItem.Value);
                 }
             }
+
+            foreach (var newItem in newHandler.LeveledItems)
+            {
+                if (this.LeveledItems.TryGetValue(newItem.Key, out var record))
+                {
+                    record.Merge(newItem.Value);
+                }
+                else
+                {
+                    this.LeveledItems.Add(newItem.Key, newItem.Value);
+                }
+            }
         }
 
         public void RemoveDeletedRecords()
@@ -251,6 +340,12 @@ namespace Quest_Data_Builder.TES3
             {
                 if (recordItem.Value.IsDeleted)
                     this.RecordsWithScript.Remove(recordItem.Key);
+            }
+
+            foreach (var levItem in this.LeveledItems)
+            {
+                if (levItem.Value.IsDeleted)
+                    this.Actors.Remove(levItem.Key);
             }
         }
 

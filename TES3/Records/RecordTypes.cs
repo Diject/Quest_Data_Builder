@@ -15,5 +15,6 @@ namespace Quest_Data_Builder.TES3.Records
         public const string Creature = "CREA";
         public const string Cell = "CELL";
         public const string Container = "CONT";
+        public const string LeveledItem = "LEVI";
     }
 }

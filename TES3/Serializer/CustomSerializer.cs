@@ -324,10 +324,6 @@ namespace Quest_Data_Builder.TES3.Serializer
                     foreach (var pos in objPos)
                     {
                         var objPosTable = newTable();
-                        objPosTable.Add("type", (int)pos.ObjectType);
-
-                        if (pos.OriginId is not null)
-                            objPosTable.Add("id", pos.ObjectId.ToLower());
 
                         var positionTable = newArray();
                         positionTable.Add(pos.Position.X);
@@ -361,6 +357,18 @@ namespace Quest_Data_Builder.TES3.Serializer
                     var containedArray = newArray();
 
                     foreach (var id in objectItem.Value.Contains)
+                    {
+                        containedArray.Add(id.ToLower());
+                    }
+
+                    objectTable.Add("contains", containedArray);
+                }
+
+                if (objectItem.Value.Links.Count > 0)
+                {
+                    var containedArray = newArray();
+
+                    foreach (var id in objectItem.Value.Links)
                     {
                         containedArray.Add(id.ToLower());
                     }
