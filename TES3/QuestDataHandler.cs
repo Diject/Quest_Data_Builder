@@ -63,7 +63,7 @@ namespace Quest_Data_Builder.TES3
         /// <summary>
         /// Number of steps in a quest to be considered a quest that an object can start(give)
         /// </summary>
-        private const int numberOfStagesToBecomeQuest = 3;
+        private const int numberOfStagesToBecomeQuest = 2;
 
 
 
