@@ -23,6 +23,7 @@ namespace Quest_Data_Builder.TES3
         public Dictionary<string, CellRecord> Cells = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, RecordWithScript> RecordsWithScript = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, LeveledItem> LeveledItems = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, LeveledCreature> LeveledCreatures = new(StringComparer.OrdinalIgnoreCase);
 
         public RecordDataHandler(TES3DataFile master)
         {
@@ -85,6 +86,13 @@ namespace Quest_Data_Builder.TES3
                     var record = new LeveledItem(recordData);
                     this.LeveledItems.Add(record.Id, record);
                 }
+
+            if (master.Records.ContainsKey(RecordType.LeveledCreature))
+                foreach (var recordData in master.Records[RecordType.LeveledCreature])
+                {
+                    var record = new LeveledCreature(recordData);
+                    this.LeveledCreatures.Add(record.Id, record);
+                }
         }
 
         public void IterateObjectPositionsFromCells(QuestObjectById objectsToFind, Action<CellRecord, CellReference, QuestObject> action)
@@ -93,7 +101,17 @@ namespace Quest_Data_Builder.TES3
             {
                 foreach (var cellObject in cell.References)
                 {
-                    if (objectsToFind.TryGetValue(cellObject.ObjectId!, out var questObject))
+                    if (this.LeveledCreatures.TryGetValue(cellObject.ObjectId!, out var leveledCreature))
+                    {
+                        foreach (var creaId in leveledCreature.Creatures)
+                        {
+                            if (objectsToFind.TryGetValue(creaId, out var questObject))
+                            {
+                                action(cell, cellObject, questObject);
+                            }
+                        }
+                    }
+                    else if (objectsToFind.TryGetValue(cellObject.ObjectId!, out var questObject))
                     {
                         action(cell, cellObject, questObject);
                     }
