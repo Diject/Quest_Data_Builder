@@ -14,6 +14,7 @@ using Microsoft.Win32;
 using Quest_Data_Builder.TES3.Serializer;
 using CommandLine;
 using System.IO;
+using Quest_Data_Builder.Extentions;
 
 namespace Quest_Data_Builder
 {
@@ -62,7 +63,12 @@ namespace Quest_Data_Builder
                 {
                     try
                     {
-                        string morrowindDirectory = options.Directory ?? Directory.GetParent(Directory.GetCurrentDirectory())!.FullName;
+                        string? morrowindDirectory = options.Directory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
+                        if (morrowindDirectory is null)
+                        {
+                            CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find morrowind directory.");
+                            return;
+                        }
                         var matches = DataFileRegex().Matches(File.ReadAllText(morrowindDirectory + @"\morrowind.ini"));
                         foreach (Match match in matches)
                         {
