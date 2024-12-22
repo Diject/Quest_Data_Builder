@@ -8,6 +8,7 @@
     <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
     <StartupObject>Quest_Data_Builder.Program</StartupObject>
     <AssemblyName>Quest Data Builder</AssemblyName>
+    <ApplicationIcon>qdb.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
@@ -15,6 +16,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
   </PropertyGroup>
+  <ItemGroup>
+    <Content Include="qdb.ico" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="CXuesong.Luaon" Version="0.2.7" />
