@@ -1,4 +1,5 @@
-﻿using Quest_Data_Builder.TES3.Records;
+﻿using Quest_Data_Builder.Logger;
+using Quest_Data_Builder.TES3.Records;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +36,11 @@ namespace Quest_Data_Builder.TES3.Quest
                     this.Name = topic.Response;
                     continue;
                 }
-                Stages.Add((uint)topic.Index!, new QuestStage(topic));
+                if (!Stages.TryAdd((uint)topic.Index!, new QuestStage(topic)))
+                {
+                    CustomLogger.WriteLine(LogLevel.Warn, $"dialogue \"{dialog.Id}\" has several \"{topic.Index}\" indexes");
+                    Stages[(uint)topic.Index!] = new QuestStage(topic);
+                }
             }
         }
     }

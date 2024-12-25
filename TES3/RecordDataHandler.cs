@@ -49,49 +49,49 @@ namespace Quest_Data_Builder.TES3
                 foreach (var recordData in master.Records[RecordType.Dialog])
                 {
                     var record = new DialogRecord(recordData);
-                    this.Dialogs.Add(record.Id, record);
+                    this.Dialogs.TryAdd(record.Id, record);
                 }
 
             if (master.Records.ContainsKey(RecordType.NPC))
                 foreach (var recordData in master.Records[RecordType.NPC])
                 {
                     var record = new ActorRecord(recordData);
-                    this.Actors.Add(record.Id, record);
+                    this.Actors.TryAdd(record.Id, record);
                 }
 
             if (master.Records.ContainsKey(RecordType.Creature))
                 foreach (var recordData in master.Records[RecordType.Creature])
                 {
                     var record = new ActorRecord(recordData);
-                    this.Actors.Add(record.Id, record);
+                    this.Actors.TryAdd(record.Id, record);
                 }
 
             if (master.Records.ContainsKey(RecordType.Container))
                 foreach (var recordData in master.Records[RecordType.Container])
                 {
                     var record = new ContainerRecord(recordData);
-                    this.Containers.Add(record.Id, record);
+                    this.Containers.TryAdd(record.Id, record);
                 }
 
             if (master.Records.ContainsKey(RecordType.Cell))
                 foreach (var recordData in master.Records[RecordType.Cell])
                 {
                     var record = new CellRecord(recordData);
-                    this.Cells.Add(record.UniqueName, record);
+                    this.Cells.TryAdd(record.UniqueName, record);
                 }
 
             if (master.Records.ContainsKey(RecordType.LeveledItem))
                 foreach (var recordData in master.Records[RecordType.LeveledItem])
                 {
                     var record = new LeveledItem(recordData);
-                    this.LeveledItems.Add(record.Id, record);
+                    this.LeveledItems.TryAdd(record.Id, record);
                 }
 
             if (master.Records.ContainsKey(RecordType.LeveledCreature))
                 foreach (var recordData in master.Records[RecordType.LeveledCreature])
                 {
                     var record = new LeveledCreature(recordData);
-                    this.LeveledCreatures.Add(record.Id, record);
+                    this.LeveledCreatures.TryAdd(record.Id, record);
                 }
         }
 
@@ -183,7 +183,7 @@ namespace Quest_Data_Builder.TES3
                 var items = this.GetItemIdsFromLeveledList(levListId);
                 if (items is not null)
                 {
-                    itemsByLevListId.Add(levListId, items);
+                    itemsByLevListId.TryAdd(levListId, items);
                 }
             }
 

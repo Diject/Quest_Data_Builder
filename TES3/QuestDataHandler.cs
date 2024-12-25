@@ -303,7 +303,7 @@ namespace Quest_Data_Builder.TES3
                     }
                 }
 
-                QuestData.Add(dialog.Id, quest);
+                QuestData.TryAdd(dialog.Id, quest);
             }
         }
 
