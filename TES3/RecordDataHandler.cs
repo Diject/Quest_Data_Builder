@@ -305,65 +305,115 @@ namespace Quest_Data_Builder.TES3
 
         public void RemoveDeletedRecords()
         {
-            foreach (var cellItem in this.Cells)
             {
-                if (cellItem.Value.IsDeleted)
+                HashSet<string> deleted = new();
+                foreach (var cellItem in this.Cells)
                 {
-                    this.Cells.Remove(cellItem.Key);
-                }
-                else
-                {
-                    for (int i = cellItem.Value.References.Count - 1; i >= 0; i--)
+                    if (cellItem.Value.IsDeleted)
                     {
-                        var reference = cellItem.Value.References[i];
-                        if (reference.Deleted)
+                        deleted.Add(cellItem.Key);
+                    }
+                    else
+                    {
+                        for (int i = cellItem.Value.References.Count - 1; i >= 0; i--)
                         {
-                            cellItem.Value.References.RemoveAt(i);
+                            var reference = cellItem.Value.References[i];
+                            if (reference.Deleted)
+                            {
+                                cellItem.Value.References.RemoveAt(i);
+                            }
                         }
                     }
                 }
-            }
 
-            foreach (var actorItem in this.Actors)
-            {
-                if (actorItem.Value.IsDeleted)
-                    this.Actors.Remove(actorItem.Key);
-            }
-
-            foreach (var scriptItem in this.Scripts)
-            {
-                if (scriptItem.Value.IsDeleted)
-                    this.Scripts.Remove(scriptItem.Key);
-            }
-
-            foreach (var dialogItem in this.Dialogs)
-            {
-                if (dialogItem.Value.IsDeleted)
+                foreach (var cellKey in deleted)
                 {
-                    this.Dialogs.Remove(dialogItem.Key);
+                    this.Cells.Remove(cellKey);
                 }
-                else
+            }
+
+            {
+                HashSet<string> deleted = new();
+                foreach (var actorItem in this.Actors)
                 {
-                    foreach (var topic in dialogItem.Value.Topics)
+                    if (actorItem.Value.IsDeleted)
+                        deleted.Add(actorItem.Key);
+                }
+
+                foreach (var key in deleted)
+                {
+                    this.Actors.Remove(key);
+                }
+            }
+
+            {
+                HashSet<string> deleted = new();
+                foreach (var scriptItem in this.Scripts)
+                {
+                    if (scriptItem.Value.IsDeleted)
+                        deleted.Add(scriptItem.Key);
+                }
+
+                foreach (var key in deleted)
+                {
+                    this.Scripts.Remove(key);
+                }
+            }
+
+            {
+                HashSet<string> deleted = new();
+                foreach (var dialogItem in this.Dialogs)
+                {
+                    if (dialogItem.Value.IsDeleted)
                     {
-                        if (topic.IsDeleted)
+                        deleted.Add(dialogItem.Key);
+                    }
+                    else
+                    {
+                        for (int i = dialogItem.Value.Topics.Count - 1; i >= 0; i--)
                         {
-                            dialogItem.Value.Topics.Remove(topic);
+                            var topic = dialogItem.Value.Topics[i];
+                            if (topic.IsDeleted)
+                            {
+                                dialogItem.Value.Topics.RemoveAt(i);
+                            }
                         }
                     }
                 }
+
+                foreach (var key in deleted)
+                {
+                    this.Dialogs.Remove(key);
+                }
             }
 
-            foreach (var recordItem in this.RecordsWithScript)
             {
-                if (recordItem.Value.IsDeleted)
-                    this.RecordsWithScript.Remove(recordItem.Key);
+                HashSet<string> deleted = new();
+                foreach (var recordItem in this.RecordsWithScript)
+                {
+                    if (recordItem.Value.IsDeleted)
+                        deleted.Add(recordItem.Key);
+                }
+
+                foreach (var key in deleted)
+                {
+                    this.RecordsWithScript.Remove(key);
+                }
             }
 
-            foreach (var levItem in this.LeveledItems)
+
             {
-                if (levItem.Value.IsDeleted)
-                    this.Actors.Remove(levItem.Key);
+                HashSet<string> deleted = new();
+                foreach (var levItem in this.LeveledItems)
+                {
+                    if (levItem.Value.IsDeleted)
+                        deleted.Add(levItem.Key);
+                }
+
+                foreach (var key in deleted)
+                {
+                    this.LeveledItems.Remove(key);
+                }
             }
         }
 
