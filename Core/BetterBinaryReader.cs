@@ -11,6 +11,7 @@ namespace Quest_Data_Builder.Core
         private static byte[] _buffer4Bytes = new byte[4];
         private static byte[] _buffer8Bytes = new byte[8];
         private BinaryReader _reader;
+        public static Encoding Encoding = Encoding.ASCII;
 
         public override long Position
         {
@@ -116,7 +117,8 @@ namespace Quest_Data_Builder.Core
 
         public override string ReadString(int length)
         {
-            return Encoding.ASCII.GetString(_reader.ReadBytes(length));
+            var bytes = _reader.ReadBytes(length);
+            return Encoding.GetString(bytes);
         }
 
         public override string ReadNullTerminatedString(int length)
@@ -126,17 +128,19 @@ namespace Quest_Data_Builder.Core
 
         public override string ReadNullTerminatedString()
         {
-            int bt;
-            bool endFound = false;
             string str = "";
-            do
+            for (;;)
             {
-                bt = _reader.ReadByte();
+                byte bt = _reader.ReadByte();
                 if (bt == '\0')
-                    endFound = true;
-                if (!endFound)
-                    str += Convert.ToChar(bt);
-            } while (!(endFound && bt != '\0'));
+                    break;
+
+                char[] arr = [];
+                if (Encoding.TryGetChars(new byte[] { bt }, arr, out var count) && count > 0)
+                {
+                    str += arr[0];
+                }
+            }
 
             _reader.BaseStream.Position--;
 
