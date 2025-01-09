@@ -15,6 +15,7 @@ using Quest_Data_Builder.TES3.Serializer;
 using CommandLine;
 using System.IO;
 using Quest_Data_Builder.Extentions;
+using System.Text;
 
 namespace Quest_Data_Builder
 {
@@ -31,6 +32,26 @@ namespace Quest_Data_Builder
 
             var options = Parser.Default.ParseArguments<Options>(args).WithParsed(options =>
             {
+                string? morrowindDirectory = options.Directory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
+                if (morrowindDirectory is null)
+                {
+                    CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find morrowind directory.");
+                    return;
+                }
+
+                string morrowindIni = morrowindDirectory + @"\morrowind.ini";
+                if (!File.Exists(morrowindIni))
+                {
+                    CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find \"morrowind.ini\"");
+                    return;
+                }
+
+                if (options.Encoding is not null)
+                {
+                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                    BetterBinaryReader.Encoding = Encoding.GetEncoding((int)options.Encoding);
+                }
+
                 if (options.MaximumNumberOfObjectPositions is not null)
                 {
                     maximumNumberOfObjectPositions = (int)options.MaximumNumberOfObjectPositions;
@@ -63,13 +84,7 @@ namespace Quest_Data_Builder
                 {
                     try
                     {
-                        string? morrowindDirectory = options.Directory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
-                        if (morrowindDirectory is null)
-                        {
-                            CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find morrowind directory.");
-                            return;
-                        }
-                        var matches = DataFileRegex().Matches(File.ReadAllText(morrowindDirectory + @"\morrowind.ini"));
+                        var matches = DataFileRegex().Matches(File.ReadAllText(morrowindIni));
                         foreach (Match match in matches)
                         {
                             morrowindFiles.TryAdd(uint.Parse(match.Groups[1].Value), morrowindDirectory + @"\Data Files\" + match.Groups[2].Value.Replace("\r", ""));
@@ -166,6 +181,9 @@ namespace Quest_Data_Builder
 
             [Option('p', "maxPos", Required = false, HelpText = "Maximum number of positions for an object.")]
             public int? MaximumNumberOfObjectPositions { get; set; }
+
+            [Option('e', "encoding", Required = false, HelpText = "Encoding of the game. (1252, 1251, 1250)")]
+            public int? Encoding { get; set; }
         }
 
         [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?) *$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
