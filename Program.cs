@@ -16,6 +16,7 @@ using CommandLine;
 using System.IO;
 using Quest_Data_Builder.Extentions;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace Quest_Data_Builder
 {
@@ -33,8 +34,28 @@ namespace Quest_Data_Builder
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Encoding exitEncoding = Encoding.GetEncoding(1252);
 
+            // TODO: refactor
             var options = Parser.Default.ParseArguments<Options>(args).WithParsed(options =>
             {
+                if (options.InputFile is not null)
+                {
+                    string text = File.ReadAllText(options.InputFile) ?? "";
+                    dynamic? jsonData = JsonConvert.DeserializeObject(text);
+                    if (jsonData is not null)
+                    {
+                        if ((object)jsonData.gameFiles is not null)
+                        {
+                            var outGameFileList = new List<string>();
+                            Newtonsoft.Json.Linq.JArray gameFiles = (Newtonsoft.Json.Linq.JArray)jsonData.gameFiles;
+                            for (int i = 0; i < gameFiles.Count; i++)
+                            {
+                                outGameFileList.Add(gameFiles.ElementAt(i).ToString());
+                            }
+                            options.GameFiles = outGameFileList;
+                        }
+                    }
+                }
+
                 string? morrowindDirectory = options.Directory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
                 if (morrowindDirectory is null)
                 {
@@ -71,17 +92,16 @@ namespace Quest_Data_Builder
                     outputDirPath = options.Output;
                 }
 
-                if (options.GameFiles.Any())
+                if (options.GameFiles.Count() > 0)
                 {
                     if (options.Directory is null)
                     {
                         CustomLogger.WriteLine(LogLevel.Error, "Error: path to the morrowind directory wasn't set.");
                         return;
                     }
-                    uint i = 0;
-                    foreach (var fileName in options.GameFiles)
+                    for (int i = 0; i < options.GameFiles.Count(); i++)
                     {
-                        morrowindFiles.Add(i++, Path.Combine([options.Directory, "Data Files", fileName]));
+                        morrowindFiles.Add((uint)i, Path.Combine([options.Directory, "Data Files", options.GameFiles.ElementAt(i)]));
                     }
                 }
                 else
@@ -183,6 +203,9 @@ namespace Quest_Data_Builder
 
             [Option('e', "encoding", Required = false, HelpText = "Encoding of the game. (1252, 1251, 1250)")]
             public int? Encoding { get; set; }
+
+            [Option('i', "inputFile", Required = false, HelpText = "Input file with some required data.")]
+            public string? InputFile { get; set; }
         }
 
         [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?) *$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
