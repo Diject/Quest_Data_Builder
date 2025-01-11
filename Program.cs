@@ -30,6 +30,9 @@ namespace Quest_Data_Builder
             var outputDirPath = "";
             var morrowindFiles = new SortedList<uint, string>();
 
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            Encoding exitEncoding = Encoding.GetEncoding(1252);
+
             var options = Parser.Default.ParseArguments<Options>(args).WithParsed(options =>
             {
                 string? morrowindDirectory = options.Directory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
@@ -48,8 +51,9 @@ namespace Quest_Data_Builder
 
                 if (options.Encoding is not null)
                 {
-                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-                    BetterBinaryReader.Encoding = Encoding.GetEncoding((int)options.Encoding);
+                    var encoding = Encoding.GetEncoding((int)options.Encoding);
+                    BetterBinaryReader.Encoding = encoding;
+                    exitEncoding = encoding;
                 }
 
                 if (options.MaximumNumberOfObjectPositions is not null)
@@ -149,18 +153,13 @@ namespace Quest_Data_Builder
 
             var jsonSer = new CustomSerializer(SerializerType.Json, dataProcessor);
             jsonSer.MaximumObjectPositions = maximumNumberOfObjectPositions;
-            File.WriteAllText(Path.Combine([outputDirPath, "quests.json"]), jsonSer.QuestData());
-            //File.WriteAllText(Path.Combine([outputDirPath, "questByTopicId.json"]), jsonSer.TopicById());
-            File.WriteAllText(Path.Combine([outputDirPath, "questByTopicText.json"]), jsonSer.QuestByTopicText());
-            File.WriteAllText(Path.Combine([outputDirPath, "questObjects.json"]), jsonSer.QuestObjects());
-            //File.WriteAllText(Path.Combine([outputDirPath, "questObjectInCell.json"]), jsonSer.QuestObjectPositionsInCell());
-            //File.WriteAllText(Path.Combine([outputDirPath, "questObjectPositions.json"]), jsonSer.QuestObjectPositions());
-            //File.WriteAllText(Path.Combine([outputDirPath, "objectIdsByScript.json"]), jsonSer.ObjectIdsByScript());
-            //File.WriteAllText(Path.Combine([outputDirPath, "questObjectInCell.json"]), jsonSer.QuestObjectPositionsInCell());
-            File.WriteAllText(Path.Combine([outputDirPath, "localVariables.json"]), jsonSer.LocalVariableDataByScriptId());
+            File.WriteAllText(Path.Combine([outputDirPath, "quests.json"]), jsonSer.QuestData(), exitEncoding);
+            File.WriteAllText(Path.Combine([outputDirPath, "questByTopicText.json"]), jsonSer.QuestByTopicText(), exitEncoding);
+            File.WriteAllText(Path.Combine([outputDirPath, "questObjects.json"]), jsonSer.QuestObjects(), exitEncoding);
+            File.WriteAllText(Path.Combine([outputDirPath, "localVariables.json"]), jsonSer.LocalVariableDataByScriptId(), exitEncoding);
 
-            File.WriteAllText(Path.Combine([outputDirPath, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations);
-            File.WriteAllText(Path.Combine([outputDirPath, "info.lua"]), "return " + (new GeneratedDataInfo(morrowindFiles).ToString()));
+            File.WriteAllText(Path.Combine([outputDirPath, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations, exitEncoding);
+            File.WriteAllText(Path.Combine([outputDirPath, "info.lua"]), "return " + (new GeneratedDataInfo(morrowindFiles).ToString()), exitEncoding);
 
             CustomLogger.WriteLine(LogLevel.Error, "Done");
         }
