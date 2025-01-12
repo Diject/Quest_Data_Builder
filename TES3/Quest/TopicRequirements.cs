@@ -17,6 +17,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 var requirement = new QuestRequirement();
                 requirement.Type = RequirementType.CustomActor;
                 requirement.Object = topic.Actor;
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -26,6 +28,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 requirement.Type = RequirementType.CustomActorCell;
                 requirement.ValueStr = topic.Cell;
                 requirement.Object = topic.Actor;
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -35,6 +39,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 requirement.Type = RequirementType.CustomActorClass;
                 requirement.ValueStr = topic.Class;
                 requirement.Object = topic.Actor;
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -44,6 +50,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 requirement.Type = RequirementType.CustomActorGender;
                 requirement.Value = (int)topic.Gender;
                 requirement.Object = topic.Actor;
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -53,6 +61,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 requirement.Type = RequirementType.CustomActorFaction;
                 requirement.ValueStr = topic.Faction;
                 requirement.Object = topic.Actor;
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -64,6 +74,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 requirement.Value = topic.Rank;
                 requirement.Variable = topic.Faction;
                 requirement.Object = topic.Actor;
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -74,6 +86,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 requirement.Operator = SCVROperator.GreaterOrEqual;
                 requirement.Object = topic.Actor;
                 requirement.Value = topic.Disposition;
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -83,6 +97,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 requirement.Type = RequirementType.CustomPCFaction;
                 requirement.ValueStr = topic.PCFaction;
                 requirement.MakeAsPlayerRequirement();
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -94,6 +110,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 requirement.Value = topic.PCRank;
                 requirement.Variable = topic.PCFaction;
                 requirement.MakeAsPlayerRequirement();
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -104,6 +122,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 {
                     requirement.Object = topic.Actor;
                 }
+                if (topic.Parent is not null)
+                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
         }

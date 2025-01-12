@@ -18,6 +18,7 @@ namespace Quest_Data_Builder.TES3.Quest
         public uint? Attribute { get; set; }
         public uint? Skill { get; set; }
         public string? Script { get; set; }
+        public string? Dialogue { get; set; }
         /// <summary>
         /// The text from which the record was created.
         /// Presents only in records that have the default (RequirementType.Custom) type set.

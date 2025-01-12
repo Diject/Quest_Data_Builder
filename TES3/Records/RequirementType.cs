@@ -194,5 +194,7 @@ namespace Quest_Data_Builder.TES3.Records
         public const string CustomPCRace = "PCR";
         public const string CustomVampClan = "VPC";
         public const string CustomRandom = "RND";
+
+        public const string CustomDialogue = "DIA";
     }
 }
