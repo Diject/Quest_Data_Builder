@@ -114,14 +114,19 @@ namespace Quest_Data_Builder
                             morrowindFiles.TryAdd(uint.Parse(match.Groups[1].Value), morrowindDirectory + @"\Data Files\" + match.Groups[2].Value.Replace("\r", ""));
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
                         return;
                     }
                 }
             });
 
-            if (!morrowindFiles.Any()) return;
+            if (!morrowindFiles.Any())
+            {
+                CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not listed");
+                return;
+            }
 
             var recordData = new SortedList<uint, RecordDataHandler>();
 
