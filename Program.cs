@@ -16,6 +16,7 @@ using CommandLine;
 using System.IO;
 using Quest_Data_Builder.Extentions;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace Quest_Data_Builder
 {
@@ -30,8 +31,31 @@ namespace Quest_Data_Builder
             var outputDirPath = "";
             var morrowindFiles = new SortedList<uint, string>();
 
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            Encoding exitEncoding = Encoding.GetEncoding(1252);
+
+            // TODO: refactor
             var options = Parser.Default.ParseArguments<Options>(args).WithParsed(options =>
             {
+                if (options.InputFile is not null)
+                {
+                    string text = File.ReadAllText(options.InputFile) ?? "";
+                    dynamic? jsonData = JsonConvert.DeserializeObject(text);
+                    if (jsonData is not null)
+                    {
+                        if ((object)jsonData.gameFiles is not null)
+                        {
+                            var outGameFileList = new List<string>();
+                            Newtonsoft.Json.Linq.JArray gameFiles = (Newtonsoft.Json.Linq.JArray)jsonData.gameFiles;
+                            for (int i = 0; i < gameFiles.Count; i++)
+                            {
+                                outGameFileList.Add(gameFiles.ElementAt(i).ToString());
+                            }
+                            options.GameFiles = outGameFileList;
+                        }
+                    }
+                }
+
                 string? morrowindDirectory = options.Directory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
                 if (morrowindDirectory is null)
                 {
@@ -48,8 +72,9 @@ namespace Quest_Data_Builder
 
                 if (options.Encoding is not null)
                 {
-                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-                    BetterBinaryReader.Encoding = Encoding.GetEncoding((int)options.Encoding);
+                    var encoding = Encoding.GetEncoding((int)options.Encoding);
+                    BetterBinaryReader.Encoding = encoding;
+                    exitEncoding = encoding;
                 }
 
                 if (options.MaximumNumberOfObjectPositions is not null)
@@ -67,17 +92,16 @@ namespace Quest_Data_Builder
                     outputDirPath = options.Output;
                 }
 
-                if (options.GameFiles.Any())
+                if (options.GameFiles.Count() > 0)
                 {
                     if (options.Directory is null)
                     {
                         CustomLogger.WriteLine(LogLevel.Error, "Error: path to the morrowind directory wasn't set.");
                         return;
                     }
-                    uint i = 0;
-                    foreach (var fileName in options.GameFiles)
+                    for (int i = 0; i < options.GameFiles.Count(); i++)
                     {
-                        morrowindFiles.Add(i++, Path.Combine([options.Directory, "Data Files", fileName]));
+                        morrowindFiles.Add((uint)i, Path.Combine([options.Directory, "Data Files", options.GameFiles.ElementAt(i)]));
                     }
                 }
                 else
@@ -90,14 +114,19 @@ namespace Quest_Data_Builder
                             morrowindFiles.TryAdd(uint.Parse(match.Groups[1].Value), morrowindDirectory + @"\Data Files\" + match.Groups[2].Value.Replace("\r", ""));
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
                         return;
                     }
                 }
             });
 
-            if (!morrowindFiles.Any()) return;
+            if (!morrowindFiles.Any())
+            {
+                CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not listed");
+                return;
+            }
 
             var recordData = new SortedList<uint, RecordDataHandler>();
 
@@ -149,18 +178,13 @@ namespace Quest_Data_Builder
 
             var jsonSer = new CustomSerializer(SerializerType.Json, dataProcessor);
             jsonSer.MaximumObjectPositions = maximumNumberOfObjectPositions;
-            File.WriteAllText(Path.Combine([outputDirPath, "quests.json"]), jsonSer.QuestData());
-            //File.WriteAllText(Path.Combine([outputDirPath, "questByTopicId.json"]), jsonSer.TopicById());
-            File.WriteAllText(Path.Combine([outputDirPath, "questByTopicText.json"]), jsonSer.QuestByTopicText());
-            File.WriteAllText(Path.Combine([outputDirPath, "questObjects.json"]), jsonSer.QuestObjects());
-            //File.WriteAllText(Path.Combine([outputDirPath, "questObjectInCell.json"]), jsonSer.QuestObjectPositionsInCell());
-            //File.WriteAllText(Path.Combine([outputDirPath, "questObjectPositions.json"]), jsonSer.QuestObjectPositions());
-            //File.WriteAllText(Path.Combine([outputDirPath, "objectIdsByScript.json"]), jsonSer.ObjectIdsByScript());
-            //File.WriteAllText(Path.Combine([outputDirPath, "questObjectInCell.json"]), jsonSer.QuestObjectPositionsInCell());
-            File.WriteAllText(Path.Combine([outputDirPath, "localVariables.json"]), jsonSer.LocalVariableDataByScriptId());
+            File.WriteAllText(Path.Combine([outputDirPath, "quests.json"]), jsonSer.QuestData(), exitEncoding);
+            File.WriteAllText(Path.Combine([outputDirPath, "questByTopicText.json"]), jsonSer.QuestByTopicText(), exitEncoding);
+            File.WriteAllText(Path.Combine([outputDirPath, "questObjects.json"]), jsonSer.QuestObjects(), exitEncoding);
+            File.WriteAllText(Path.Combine([outputDirPath, "localVariables.json"]), jsonSer.LocalVariableDataByScriptId(), exitEncoding);
 
-            File.WriteAllText(Path.Combine([outputDirPath, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations);
-            File.WriteAllText(Path.Combine([outputDirPath, "info.lua"]), "return " + (new GeneratedDataInfo(morrowindFiles).ToString()));
+            File.WriteAllText(Path.Combine([outputDirPath, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations, exitEncoding);
+            File.WriteAllText(Path.Combine([outputDirPath, "info.lua"]), "return " + (new GeneratedDataInfo(morrowindFiles).ToString()), exitEncoding);
 
             CustomLogger.WriteLine(LogLevel.Error, "Done");
         }
@@ -184,6 +208,9 @@ namespace Quest_Data_Builder
 
             [Option('e', "encoding", Required = false, HelpText = "Encoding of the game. (1252, 1251, 1250)")]
             public int? Encoding { get; set; }
+
+            [Option('i', "inputFile", Required = false, HelpText = "Input file with some required data.")]
+            public string? InputFile { get; set; }
         }
 
         [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?) *$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
