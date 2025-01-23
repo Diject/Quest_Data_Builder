@@ -126,6 +126,30 @@ namespace Quest_Data_Builder.TES3.Quest
                     requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
+
+            // search for different topics that have higher priority and almost the same requirements
+            if (topic.Parent is not null)
+            {
+                for (int i = topic.Parent.Topics.IndexOf(topic) - 1; i >= 0; i--)
+                {
+                    var previous = topic.Parent.Topics[i];
+
+                    if (!previous.Compare(topic)) break;
+
+                    if (!topic.CompareSCVR(previous, 1, out var unmatched)) continue;
+
+                    foreach (var req in unmatched)
+                    {
+                        if (req.Type == SCVRType.Item || req.Type == SCVRType.Dead)
+                        {
+                            var requirement = new QuestRequirement(req);
+                            requirement.ReverseOperator();
+                            this.Add(requirement);
+                        }
+                    }
+                }
+            }
+
         }
     }
 }
