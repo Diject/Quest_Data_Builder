@@ -135,7 +135,7 @@ namespace Quest_Data_Builder.Core
                 if (bt == '\0')
                     break;
 
-                var arr = new char[1];
+                var arr = new char[3];
                 if (Encoding.TryGetChars(new byte[] { bt }, arr, out var count) && count > 0)
                 {
                     str += arr[0];
