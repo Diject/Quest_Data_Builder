@@ -365,26 +365,28 @@ namespace Quest_Data_Builder.TES3
                         this.QuestObjects.Add(req.Object, questData, stage.Index, null);
 
                         var scriptObj = this.QuestObjects.Add(req.Script, questData, stage.Index, QuestObjectType.Script);
-                        if (scriptObj is not null && this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
+                        if (scriptObj is null) continue;
+
+                        if (this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
                         {
                             foreach (var id in ids)
                             {
-                                scriptObj.AddContainedObjectId(id);
+                                scriptObj.AddLink(id);
                             }
                         }
 
-                        var valObj = this.QuestObjects.Add(req.ValueStr, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                        if (valObj is not null && req.Script is not null)
+                        if (req.ValueStr is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
                         {
-                            valObj.AddContainedObjectId(req.Script);
-                            scriptObj!.AddContainedObjectId(req.ValueStr!);
+                            var valObj = this.QuestObjects.Add(req.ValueStr, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
+                            valObj?.AddLink(req.Script!);
+                            scriptObj?.AddContainedObjectId(req.ValueStr);
                         }
 
-                        var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                        if (varObj is not null && req.Script is not null)
+                        if (req.Variable is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
                         {
-                            varObj.AddContainedObjectId(req.Script);
-                            scriptObj!.AddContainedObjectId(req.Variable!);
+                            var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
+                            varObj?.AddLink(req.Script!);
+                            scriptObj?.AddContainedObjectId(req.Variable);
                         }
 
                     }

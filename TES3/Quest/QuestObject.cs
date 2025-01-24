@@ -85,13 +85,21 @@ namespace Quest_Data_Builder.TES3.Quest
 
         public void AddContainedObjectId(QuestObject qObject)
         {
+            if (String.Equals(qObject.ObjectId, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
             Contains.Add(qObject.ObjectId);
             qObject.Links.Add(this.ObjectId);
         }
 
         public void AddContainedObjectId(string id)
         {
+            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
             Contains.Add(id);
+        }
+
+        public void AddLink(string id)
+        {
+            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
+            Links.Add(id);
         }
     }
 
