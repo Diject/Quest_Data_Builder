@@ -213,7 +213,7 @@ namespace Quest_Data_Builder
             public string? InputFile { get; set; }
         }
 
-        [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?) *$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+        [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?)[ \\t]*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
         private static partial Regex DataFileRegex();
     }
 }

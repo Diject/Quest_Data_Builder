@@ -258,7 +258,7 @@ namespace Quest_Data_Builder.TES3.Script
             return match.Success;
         }
 
-        [GeneratedRegex("^[ \t]*(begin|if|elseif|else|while|endif|endwhile|end)[ (\"]*(.*?)[ )\"]*$", RegexOptions.IgnoreCase)]
+        [GeneratedRegex("^[ \\t]*(begin|if|elseif|else|while|endif|endwhile|end)[ (\"]*(.*?)[ )\"\\t]*$", RegexOptions.IgnoreCase)]
         private static partial Regex BlockLabelRegex();
 
 
@@ -268,7 +268,7 @@ namespace Quest_Data_Builder.TES3.Script
             return match.Success;
         }
 
-        [GeneratedRegex("^[ \\t]*(short|long|float)[ ]+?(\\S+)[ ]*$", RegexOptions.IgnoreCase)]
+        [GeneratedRegex("^[ \\t]*(short|long|float)[ ]+?(\\S+)[ \\t]*$", RegexOptions.IgnoreCase)]
         private static partial Regex localVariableRegex();
 
 
