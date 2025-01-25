@@ -51,7 +51,7 @@ namespace Quest_Data_Builder.TES3
         public Dictionary<string, ScriptData> ScriptDataById = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Contains data about variables in scripts. By script id; by variable name
+        /// Contains data about local variables in scripts or on objects. By script or object id; by variable name
         /// </summary>
         public ScriptVariables VariablesByScriptId = new(StringComparer.OrdinalIgnoreCase);
 
@@ -473,13 +473,52 @@ namespace Quest_Data_Builder.TES3
                     }
                     else
                     {
-                        this.GlobalVariables.TryAdd(variableName, new());
-                        this.GlobalVariables[variableName].AddRange(variableList);
+                        // check if it is a local variable of an object
+                        var match = LocVariableRegex().Match(variableName);
+                        if (match.Success)
+                        {
+                            var ownerId = match.Groups[1].Value;
+                            var varId = match.Groups[2].Value;
+
+                            if (!this.QuestObjects.TryGetValue(ownerId, out var ownerObject))
+                            {
+                                var type = QuestObjectType.Owner;
+                                if (this.dataHandler.Scripts.ContainsKey(ownerId))
+                                {
+                                    type = QuestObjectType.Script;
+                                }
+
+                                ownerObject = this.QuestObjects.Add(ownerId, type);
+                            }
+
+                            if (!this.QuestObjects.TryGetValue(varId, out var varObject))
+                            {
+                                varObject = this.QuestObjects.Add(varId, QuestObjectType.Local);
+                            }
+
+                            if (ownerObject is null || varObject is null) continue;
+
+                            ownerObject.AddContainedObjectId(varId);
+                            varObject.AddLink(ownerId);
+
+                            this.VariablesByScriptId.TryAdd(ownerId, new(StringComparer.OrdinalIgnoreCase));
+                            if (!this.VariablesByScriptId[ownerId].TryAdd(varId, variableList))
+                            {
+                                this.VariablesByScriptId[ownerId][varId].AddRange(variableList);
+                            }
+                        }
+                        else
+                        {
+                            this.GlobalVariables.TryAdd(variableName, new());
+                            this.GlobalVariables[variableName].AddRange(variableList);
+                        }
                     }
                 }
             }
         }
 
+        [GeneratedRegex("[\\\"]*([^\\\"]+)[\\\"]*[.](\\S+)")]
+        private static partial Regex LocVariableRegex();
     }
 
 }
