@@ -195,10 +195,70 @@ namespace Quest_Data_Builder.TES3.Records
             Parent = parent;
         }
 
+        /// <summary>
+        /// Compares two TopicRecords by their main condition values
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Compare(TopicRecord other)
+        {
+            if (this.Type != other.Type) return false;
+            if (this.Actor != other.Actor) return false;
+            if (this.Race != other.Race) return false;
+            if (this.Gender != other.Gender) return false;
+            if (this.Class != other.Class) return false;
+            if (this.Faction != other.Faction) return false;
+            if (this.Cell != other.Cell) return false;
+            if (this.Faction != other.Faction) return false;
+            if (this.Rank != other.Rank) return false;
+            if (this.PCFaction != other.PCFaction) return false;
+            if (this.PCRank != other.PCRank) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Compares two TopicRecords by their SCVR values. Returns true if less or equal than count variables of *other* are unmatched
+        /// </summary>
+        /// <param name="other"></param>
+        /// <param name="count">Maximum number of unmatched variables to return true</param>
+        /// <param name="unmatched">Unmatched variables</param>
+        /// <returns></returns>
+        public bool CompareSCVR(TopicRecord other, int count, out List<SCVRVariable> unmatched)
+        {
+            unmatched = new List<SCVRVariable>();
+            for (int i = 0; i < other.Variables.Count; i++)
+            {
+                var variable = other.Variables[i];
+
+                bool found = false;
+                for (int j = 0; j < this.Variables.Count; j++)
+                {
+                    if (variable.Compare(this.Variables[j]))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    count--;
+                    if (count < 0) return false;
+                    unmatched.Add(variable);
+                }
+            }
+            return true;
+        }
+
         public void Merge(TopicRecord newRecord)
         {
             if (newRecord.Parent is not null)
-                this.Parent = newRecord.Parent;
+            {
+                if (this.Parent is null || this.Parent.Id != newRecord.Parent.Id)
+                {
+                    this.Parent = newRecord.Parent;
+                }
+            }
             this.PreviousId = newRecord.PreviousId;
             this.NextId = newRecord.NextId;
             if (newRecord.Type is not null)

@@ -102,6 +102,21 @@ namespace Quest_Data_Builder.TES3.Quest
 
         }
 
+        public QuestObject? Add(string? objectId, QuestObjectType? type)
+        {
+            if (objectId is null) return null;
+            if (base.TryGetValue(objectId, out var qObject))
+            {
+                return qObject;
+            }
+            else
+            {
+                var newObj = new QuestObject(objectId, type);
+                base.Add(objectId, newObj);
+                return newObj;
+            }
+        }
+
         public QuestObject? Add(string? objectId, QuestHandler quest, uint stageNum, QuestObjectType? type)
         {
             if (objectId is null) return null;
@@ -130,7 +145,7 @@ namespace Quest_Data_Builder.TES3.Quest
         }
 
         /// <summary>
-        /// For objects that owns a quest object. For "Owner" and "ScriptData" types
+        /// For objects that owns a quest object. For "Owner", "ScriptData" and "Dialog" types. Returns container object
         /// </summary>
         public QuestObject? Add(string? ownerId, string? objectId, QuestObject questObject, QuestObjectType objType)
         {

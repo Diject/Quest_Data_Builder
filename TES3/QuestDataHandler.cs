@@ -89,6 +89,24 @@ namespace Quest_Data_Builder.TES3
                 {
                     CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the dialog record, {dialogItem.Value.Id}");
                 }
+
+                // find items in dialogs that are added to the player by AddItem
+                foreach (var topic in dialogItem.Value.Topics)
+                {
+                    if (String.IsNullOrEmpty(topic.Result)) continue;
+                    if (String.IsNullOrEmpty(topic.Actor)) continue;
+
+                    var matches = AddItemRegex().Matches(topic.Result!);
+                    foreach (Match match in matches)
+                    {
+                        var itemId = match.Groups[1].Value;
+                        var qObject = this.QuestObjects.Add(itemId, QuestObjectType.Object);
+
+                        if (qObject is null) continue;
+
+                        var diaActorObject = this.QuestObjects.Add(topic.Actor, itemId, qObject, QuestObjectType.Object);
+                    }
+                }
             }
 
             foreach (var script in dataHandler.Scripts)
@@ -97,8 +115,25 @@ namespace Quest_Data_Builder.TES3
                 {
                     CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the script record, {script.Value.Id}");
                 }
+
+                // find items in scripts that are added to the player by AddItem
+                if (String.IsNullOrEmpty(script.Value.Text)) continue;
+                var matches = AddItemRegex().Matches(script.Value.Text!);
+                foreach (Match match in matches)
+                {
+                    var itemId = match.Groups[1].Value;
+                    var qObject = this.QuestObjects.Add(itemId, QuestObjectType.Object);
+
+                    if (qObject is null) continue;
+
+                    var scrObject = this.QuestObjects.Add(script.Value.Id, itemId, qObject, QuestObjectType.Script);
+                }
             }
         }
+
+        [GeneratedRegex("Player[\" ]*->[ ]*AddItem[\", ]+([^\", ]+)[\", ]*([^\", ]*)", RegexOptions.IgnoreCase)]
+        private static partial Regex AddItemRegex();
+
 
         private bool tryAddToElementsWithAttachedQuest(DialogRecord record)
         {

@@ -9,7 +9,7 @@ namespace Quest_Data_Builder.TES3.Serializer
 {
     class GeneratedDataInfo
     {
-        static readonly int version = 2;
+        static readonly int version = 3;
         readonly SortedList<uint, string> files;
 
         public GeneratedDataInfo(SortedList<uint, string> files)

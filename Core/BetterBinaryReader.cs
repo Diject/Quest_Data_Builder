@@ -135,14 +135,12 @@ namespace Quest_Data_Builder.Core
                 if (bt == '\0')
                     break;
 
-                char[] arr = [];
+                var arr = new char[3];
                 if (Encoding.TryGetChars(new byte[] { bt }, arr, out var count) && count > 0)
                 {
                     str += arr[0];
                 }
             }
-
-            _reader.BaseStream.Position--;
 
             return str.TrimEnd('\0');
         }

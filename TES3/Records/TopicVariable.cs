@@ -31,7 +31,18 @@ namespace Quest_Data_Builder.TES3.Records
             DetailsValue = scvr.Substring(2, 2);
             Operator = (SCVROperator)scvr[4];
             if (scvr.Length > 5) 
-                Name = scvr.Substring(5);
+                Name = scvr.Substring(5).Trim();
+        }
+
+        /// <summary>
+        /// Compares two SCVRVariables by main fields (except for Index)
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Compare(SCVRVariable other)
+        {
+            return Type == other.Type && DetailsValue == other.DetailsValue && Operator == other.Operator && Name == other.Name &&
+                FLTV == other.FLTV && INTV == other.INTV;
         }
     }
 
