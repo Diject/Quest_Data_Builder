@@ -1,4 +1,5 @@
-﻿using Quest_Data_Builder.Logger;
+﻿using Quest_Data_Builder.Extentions;
+using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
 using System;
@@ -58,6 +59,8 @@ namespace Quest_Data_Builder.TES3.Script
 
         public static QuestRequirement? ConditionToRequirement(string conditionStr)
         {
+            var replacer = new PairReplacer();
+            conditionStr = replacer.AddQuotedString(conditionStr);
             var match = conditionRegex().Match(conditionStr.Replace("\t", String.Empty));
 
             if (!match.Success)
@@ -66,11 +69,11 @@ namespace Quest_Data_Builder.TES3.Script
                 return null;
             }
 
-            var objectStr = match.Groups[1].Value;
-            var commandStr = match.Groups[2].Value.Trim();
-            var variableStr = match.Groups[3].Value.Trim();
-            var operatorStr = match.Groups[4].Value;
-            var valueStr = match.Groups[5].Value;
+            var objectStr = replacer.Get(match.Groups[1].Value);
+            var commandStr = replacer.Get(match.Groups[2].Value.Trim()).Trim();
+            var variableStr = replacer.Get(match.Groups[3].Value.Trim()).Trim();
+            var operatorStr = replacer.Get(match.Groups[4].Value);
+            var valueStr = replacer.Get(match.Groups[5].Value);
 
             bool isObjectPlayer = string.Equals(objectStr, "player", StringComparison.OrdinalIgnoreCase);
 
