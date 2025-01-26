@@ -196,5 +196,29 @@ namespace Quest_Data_Builder.TES3.Records
         public const string CustomRandom = "RND";
 
         public const string CustomDialogue = "DIA";
+
+        public const string CustomResistMagicka = "RMG";
+        public const string CustomResistFire = "RFI";
+        public const string CustomResistFrost = "RFR";
+        public const string CustomResistShock = "RSH";
+        public const string CustomResistDisease = "RDS";
+        public const string CustomResistBlight = "RBL";
+        public const string CustomResistCorprus = "RCR";
+        public const string CustomResistPoison = "RPS";
+        public const string CustomResistParalysis = "RPR";
+        public const string CustomResistNormalWeapons = "RNW";
+        public const string CustomWaterBreathing = "WBR";
+        public const string CustomChameleon = "CHM";
+        public const string CustomWaterWalking = "WWL";
+        public const string CustomSwimSpeed = "SWS";
+        public const string CustomSuperJump = "SJP";
+        public const string CustomFlying = "FLY";
+        public const string CustomArmorBonus = "ARB";
+        public const string CustomSilence = "SLN";
+        public const string CustomBlindness = "SLN";
+        public const string CustomParalysis = "PAR";
+        public const string CustomInvisible = "INS";
+        public const string CustomAttackBonus = "ATB";
+        public const string CustomDefendBonus = "DFB";
     }
 }
