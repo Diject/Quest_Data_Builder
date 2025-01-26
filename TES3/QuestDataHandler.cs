@@ -188,7 +188,7 @@ namespace Quest_Data_Builder.TES3
             return ret;
         }
 
-        [GeneratedRegex("(?:Journal|SetJournalIndex)[ ,]+\"*(.+?)\"*[ ,]+(\\d+)", RegexOptions.IgnoreCase)]
+        [GeneratedRegex("(?:Journal|SetJournalIndex)[ ,]+\\\"*([^<>!=]+?)\\\"*[ ,]+(\\d+)", RegexOptions.IgnoreCase)]
         private static partial Regex JournalRegex();
 
         private void addQuestContainingElement(QuestContainingElement questContainingElement)
