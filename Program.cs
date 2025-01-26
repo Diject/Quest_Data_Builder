@@ -17,6 +17,7 @@ using System.IO;
 using Quest_Data_Builder.Extentions;
 using System.Text;
 using Newtonsoft.Json;
+using Quest_Data_Builder.Config;
 
 namespace Quest_Data_Builder
 {
@@ -25,94 +26,74 @@ namespace Quest_Data_Builder
         static void Main(string[] args)
         {
             CustomLogger.Level = LogLevel.Warn;
-            int maximumNumberOfObjectPositions = 50;
-
-
-            var outputDirPath = "";
-            var morrowindFiles = new SortedList<uint, string>();
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            Encoding exitEncoding = Encoding.GetEncoding(1252);
+            MainConfig.FileEncoding = Encoding.GetEncoding(1252);
 
-            // TODO: refactor
             var options = Parser.Default.ParseArguments<Options>(args).WithParsed(options =>
             {
                 if (options.InputFile is not null)
                 {
-                    string text = File.ReadAllText(options.InputFile) ?? "";
-                    dynamic? jsonData = JsonConvert.DeserializeObject(text);
-                    if (jsonData is not null)
-                    {
-                        if ((object)jsonData.gameFiles is not null)
-                        {
-                            var outGameFileList = new List<string>();
-                            Newtonsoft.Json.Linq.JArray gameFiles = (Newtonsoft.Json.Linq.JArray)jsonData.gameFiles;
-                            for (int i = 0; i < gameFiles.Count; i++)
-                            {
-                                outGameFileList.Add(gameFiles.ElementAt(i).ToString());
-                            }
-                            options.GameFiles = outGameFileList;
-                        }
-                    }
+                    MainConfig.LoadConfiguration(options.InputFile);
                 }
 
-                string? morrowindDirectory = options.Directory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
-                if (morrowindDirectory is null)
+                if (options.Directory is not null)
                 {
-                    CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find morrowind directory.");
-                    return;
-                }
-
-                string morrowindIni = morrowindDirectory + @"\morrowind.ini";
-                if (!File.Exists(morrowindIni))
-                {
-                    CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find \"morrowind.ini\"");
-                    return;
+                    MainConfig.MorrowindDirectory = options.Directory;
                 }
 
                 if (options.Encoding is not null)
                 {
-                    var encoding = Encoding.GetEncoding((int)options.Encoding);
-                    BetterBinaryReader.Encoding = encoding;
-                    exitEncoding = encoding;
+                    MainConfig.FileEncoding = Encoding.GetEncoding((int)options.Encoding);
                 }
 
-                if (options.MaximumNumberOfObjectPositions is not null)
+                if (options.MaxObjectPositions is not null)
                 {
-                    maximumNumberOfObjectPositions = (int)options.MaximumNumberOfObjectPositions;
+                    MainConfig.MaxObjectPositions = (int)options.MaxObjectPositions;
                 }
 
                 if (options.LogLevel is not null)
                 {
-                    CustomLogger.Level = (LogLevel)options.LogLevel;
+                    MainConfig.LogLevel = (LogLevel)options.LogLevel;
                 }
 
                 if (options.Output is not null)
                 {
-                    outputDirPath = options.Output;
+                    MainConfig.OutputDirectory = options.Output;
                 }
+            });
 
-                if (options.GameFiles.Count() > 0)
+            {
+                if (MainConfig.GameFiles is null || MainConfig.GameFiles.Count == 0)
                 {
-                    if (options.Directory is null)
+                    CustomLogger.WriteLine(LogLevel.Error, "Using \"morrowind.ini\" to generate data");
+
+                    string? morrowindDirectory = MainConfig.MorrowindDirectory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
+                    if (morrowindDirectory is null)
                     {
-                        CustomLogger.WriteLine(LogLevel.Error, "Error: path to the morrowind directory wasn't set.");
+                        CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find morrowind directory.");
                         return;
                     }
-                    for (int i = 0; i < options.GameFiles.Count(); i++)
+
+                    string morrowindIni = morrowindDirectory + @"\morrowind.ini";
+                    if (!File.Exists(morrowindIni))
                     {
-                        morrowindFiles.Add((uint)i, Path.Combine([options.Directory, "Data Files", options.GameFiles.ElementAt(i)]));
+                        CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find \"morrowind.ini\"");
+                        return;
                     }
-                }
-                else
-                {
+
                     try
                     {
                         var matches = DataFileRegex().Matches(File.ReadAllText(morrowindIni));
+                        var morrowindFiles = new SortedList<uint, string>();
                         foreach (Match match in matches)
                         {
-                            morrowindFiles.TryAdd(uint.Parse(match.Groups[1].Value), morrowindDirectory + @"\Data Files\" + match.Groups[2].Value.Replace("\r", ""));
+                            string filePath = Path.Combine(morrowindDirectory, "Data Files", match.Groups[2].Value.Replace("\r", ""));
+                            CustomLogger.WriteLine(LogLevel.Info, $"file path: \"{filePath}\"");
+                            morrowindFiles.TryAdd(uint.Parse(match.Groups[1].Value), filePath);
                         }
+
+                        MainConfig.GameFiles = new List<string>(morrowindFiles.Values);
                     }
                     catch (Exception ex)
                     {
@@ -120,38 +101,54 @@ namespace Quest_Data_Builder
                         return;
                     }
                 }
-            });
+                else
+                {
+                    CustomLogger.WriteLine(LogLevel.Error, "Using game files from configuration file to generate data");
 
-            if (!morrowindFiles.Any())
+                    if (MainConfig.GameFiles is null)
+                    {
+                        CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not listed");
+                        return;
+                    }
+                }
+            }
+
+            if (MainConfig.GameFiles.Count == 0)
             {
                 CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not listed");
                 return;
             }
 
-            var recordData = new SortedList<uint, RecordDataHandler>();
+            var recordData = new List<RecordDataHandler>();
 
-            foreach (var fileItem in morrowindFiles)
+            foreach (var filePath in MainConfig.GameFiles)
             {
-                var fileName = fileItem.Value;
-                CustomLogger.WriteLine(LogLevel.Error, $"processing \"{fileName}\"");
+                CustomLogger.WriteLine(LogLevel.Error, $"processing \"{filePath}\"");
                 try
                 {
-                    using var reader = new BetterBinaryReader(File.OpenRead(fileName));
+                    using var reader = new BetterBinaryReader(File.OpenRead(filePath));
                     var tes3 = new TES3DataFile(reader);
 
                     var dataHandler = new RecordDataHandler(tes3);
 
-                    recordData.Add(fileItem.Key, dataHandler);
+                    recordData.Add(dataHandler);
                 }
                 catch (Exception ex)
                 {
+                    CustomLogger.WriteLine(LogLevel.Error, "Error: failed to process the file");
                     CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
                 }
             }
 
+            if (recordData.Count == 0)
+            {
+                CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not found");
+                return;
+            }
+
             for (int i = 1; i < recordData.Count; i++)
             {
-                var data = recordData.Values[i];
+                var data = recordData[i];
 
                 recordData[0].Merge(data);
             }
@@ -177,23 +174,20 @@ namespace Quest_Data_Builder
 
 
             var jsonSer = new CustomSerializer(SerializerType.Json, dataProcessor);
-            jsonSer.MaximumObjectPositions = maximumNumberOfObjectPositions;
-            File.WriteAllText(Path.Combine([outputDirPath, "quests.json"]), jsonSer.QuestData(), exitEncoding);
-            File.WriteAllText(Path.Combine([outputDirPath, "questByTopicText.json"]), jsonSer.QuestByTopicText(), exitEncoding);
-            File.WriteAllText(Path.Combine([outputDirPath, "questObjects.json"]), jsonSer.QuestObjects(), exitEncoding);
-            File.WriteAllText(Path.Combine([outputDirPath, "localVariables.json"]), jsonSer.LocalVariableDataByScriptId(), exitEncoding);
+            jsonSer.MaximumObjectPositions = MainConfig.MaxObjectPositions;
+            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests.json"]), jsonSer.QuestData(), MainConfig.FileEncoding);
+            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText.json"]), jsonSer.QuestByTopicText(), MainConfig.FileEncoding);
+            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects.json"]), jsonSer.QuestObjects(), MainConfig.FileEncoding);
+            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables.json"]), jsonSer.LocalVariableDataByScriptId(), MainConfig.FileEncoding);
 
-            File.WriteAllText(Path.Combine([outputDirPath, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations, exitEncoding);
-            File.WriteAllText(Path.Combine([outputDirPath, "info.lua"]), "return " + (new GeneratedDataInfo(morrowindFiles).ToString()), exitEncoding);
+            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations, MainConfig.FileEncoding);
+            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "info.lua"]), "return " + (new GeneratedDataInfo(MainConfig.GameFiles).ToString()), MainConfig.FileEncoding);
 
             CustomLogger.WriteLine(LogLevel.Error, "Done");
         }
 
         public class Options
         {
-            [Option('f', "gameFiles", Required = false, HelpText = "List of mod file names, separated by a space character. Required \"-d\" to be set.")]
-            public required IEnumerable<string> GameFiles { get; set; }
-
             [Option('l', "logLevel", Required = false, HelpText = "Log level. From 0 to 3.")]
             public uint? LogLevel { get; set; }
 
@@ -204,16 +198,16 @@ namespace Quest_Data_Builder
             public string? Output { get; set; }
 
             [Option('p', "maxPos", Required = false, HelpText = "Maximum number of positions for an object.")]
-            public int? MaximumNumberOfObjectPositions { get; set; }
+            public int? MaxObjectPositions { get; set; }
 
             [Option('e', "encoding", Required = false, HelpText = "Encoding of the game. (1252, 1251, 1250)")]
             public int? Encoding { get; set; }
 
-            [Option('i', "inputFile", Required = false, HelpText = "Input file with some required data.")]
+            [Option('i', "inputFile", Required = false, HelpText = "Input config file with required data.")]
             public string? InputFile { get; set; }
         }
 
-        [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?)[ \\t]*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+        [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?)[ ;\\t]*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
         private static partial Regex DataFileRegex();
     }
 }
