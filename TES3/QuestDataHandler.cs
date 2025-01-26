@@ -230,9 +230,13 @@ namespace Quest_Data_Builder.TES3
 
                     foreach (var element in dialogData[stage.Index])
                     {
+                        ScriptBlock scriptBlock;
+
                         if (element.Type == RecordType.Topic)
                         {
                             stage.AddRequirements(element.Requirements);
+
+                            scriptBlock = new ScriptBlock(((TopicRecord?)element.Record!).Result ?? "");
                         }
                         else if (element.Type == RecordType.Script)
                         {
@@ -242,57 +246,63 @@ namespace Quest_Data_Builder.TES3
                             scriptData.BlockData.UpdateToIncludeStartScriptData(dataHandler, this);
                             this.ScriptDataById.TryAdd(scriptData.Id, scriptData);
 
-                            var scriptBlock = scriptData.BlockData;
-                            if (scriptBlock.FindJournalFunction(element.QuestId, stage.Index.ToString(), out var journalResults))
+                            scriptBlock = scriptData.BlockData;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+
+                        // find journal functions in the script block that represent the script
+                        if (scriptBlock.FindJournalFunction(element.QuestId, stage.Index.ToString(), out var journalResults))
+                        {
+                            foreach (var result in journalResults)
                             {
-                                foreach (var result in journalResults)
+                                var requirements = result.Requirements ?? new();
+
+                                HashSet<string> processedVars = new(StringComparer.OrdinalIgnoreCase);
+
+                                for (int i = requirements.Count - 1; i >= 0; i--)
                                 {
-                                    var requirements = result.Requirements ?? new();
+                                    var req = requirements[i];
 
-                                    HashSet<string> processedVars = new(StringComparer.OrdinalIgnoreCase);
+                                    if (req.Type != RequirementType.CustomLocal || processedVars.Contains(req.Variable ?? "") || req.Object is not null) continue;
 
-                                    for (int i = requirements.Count - 1; i >= 0; i--)
+                                    var variableData = scriptBlock.GetVariableData(req.Variable!);
+                                    if (variableData is null) continue;
+
+                                    // to remove local vars like doOnce
+                                    if (variableData.Count == 1 &&
+                                        variableData[0].BlockId == requirements.ScriptBlock?.Id &&
+                                        !ConditionConverter.CheckCondition((double?)variableData[0].Value, (double?)req.Value, req.Operator))
                                     {
-                                        var req = requirements[i];
-
-                                        if (req.Type != RequirementType.CustomLocal || processedVars.Contains(req.Variable ?? "") || req.Object is not null) continue;
-
-                                        var variableData = scriptBlock.GetVariableData(req.Variable!);
-                                        if (variableData is null) continue;
-
-                                        // to remove local vars like doOnce
-                                        if (variableData.Count == 1 &&
-                                            variableData[0].BlockId == requirements.ScriptBlock?.Id &&
-                                            !ConditionConverter.CheckCondition((double?)variableData[0].Value, (double?)req.Value, req.Operator))
-                                        {
-                                            processedVars.Add(req.Variable ?? "");
-                                            requirements.RemoveAt(i);
-                                            continue;
-                                        }
-
-                                        // to replace requirements of vars that to be present once, but not in the same block
-                                        if (variableData.Count == 1 &&
-                                            variableData[0].BlockId != requirements.ScriptBlock?.Id &&
-                                            ConditionConverter.CheckCondition((double?)variableData[0].Value, (double?)req.Value, req.Operator))
-                                        {
-                                            processedVars.Add(req.Variable ?? "");
-                                            requirements.RemoveAt(i);
-                                            if (variableData[0].Requirements is not null)
-                                            {
-                                                foreach (var r in variableData[0].Requirements!)
-                                                {
-                                                    if (!(r.Type == RequirementType.CustomLocal && (processedVars.Contains(req.Variable ?? "") || r.Variable?.ToLower() == req.Variable?.ToLower())))
-                                                    {
-                                                        requirements.Add(r);
-                                                    }
-                                                }
-                                                i = requirements.Count; // restart the cycle
-                                            }
-                                        }
+                                        processedVars.Add(req.Variable ?? "");
+                                        requirements.RemoveAt(i);
+                                        continue;
                                     }
 
-                                    stage.Requirements.Add(requirements);
+                                    // to replace requirements of vars that to be present once, but not in the same block
+                                    if (variableData.Count == 1 &&
+                                        variableData[0].BlockId != requirements.ScriptBlock?.Id &&
+                                        ConditionConverter.CheckCondition((double?)variableData[0].Value, (double?)req.Value, req.Operator))
+                                    {
+                                        processedVars.Add(req.Variable ?? "");
+                                        requirements.RemoveAt(i);
+                                        if (variableData[0].Requirements is not null)
+                                        {
+                                            foreach (var r in variableData[0].Requirements!)
+                                            {
+                                                if (!(r.Type == RequirementType.CustomLocal && (processedVars.Contains(req.Variable ?? "") || r.Variable?.ToLower() == req.Variable?.ToLower())))
+                                                {
+                                                    requirements.Add(r);
+                                                }
+                                            }
+                                            i = requirements.Count; // restart the cycle
+                                        }
+                                    }
                                 }
+
+                                stage.Requirements.Add(requirements);
                             }
                         }
                     }
