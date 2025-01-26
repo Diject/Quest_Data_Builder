@@ -41,6 +41,8 @@ namespace Quest_Data_Builder.Config
 
         public static bool LoadConfiguration(string filename)
         {
+            CustomLogger.WriteLine(LogLevel.Info, "Loading configuration file...");
+
             string text;
             try
             {
@@ -95,6 +97,8 @@ namespace Quest_Data_Builder.Config
                 }
                 GameFiles = outGameFileList;
             }
+
+            CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");
 
             return true;
         }

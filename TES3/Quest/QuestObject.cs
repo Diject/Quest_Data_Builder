@@ -1,4 +1,5 @@
-﻿using Quest_Data_Builder.TES3.Cell;
+﻿using Quest_Data_Builder.Logger;
+using Quest_Data_Builder.TES3.Cell;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,6 +64,8 @@ namespace Quest_Data_Builder.TES3.Quest
             {
                 Type = (QuestObjectType)type;
             }
+
+            CustomLogger.WriteLine(LogLevel.Info, $"new quest object {objectId}, type {Type}");
         }
 
         public QuestObject(string objectId, QuestObjectType? type, string originId) : this(objectId, type)

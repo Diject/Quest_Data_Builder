@@ -12,6 +12,7 @@ namespace Quest_Data_Builder.Logger
         Info = 2,
         Warn = 1,
         Error = 0,
+        Text = -1,
     }
 
     internal static class CustomLogger

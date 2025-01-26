@@ -66,7 +66,7 @@ namespace Quest_Data_Builder
             {
                 if (MainConfig.GameFiles is null || MainConfig.GameFiles.Count == 0)
                 {
-                    CustomLogger.WriteLine(LogLevel.Error, "Using \"morrowind.ini\" to generate data");
+                    CustomLogger.WriteLine(LogLevel.Text, "Using \"morrowind.ini\" to generate data");
 
                     string? morrowindDirectory = MainConfig.MorrowindDirectory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
                     if (morrowindDirectory is null)
@@ -103,7 +103,7 @@ namespace Quest_Data_Builder
                 }
                 else
                 {
-                    CustomLogger.WriteLine(LogLevel.Error, "Using game files from configuration file to generate data");
+                    CustomLogger.WriteLine(LogLevel.Text, "Using info from configuration file to generate data");
 
                     if (MainConfig.GameFiles is null)
                     {
@@ -123,7 +123,7 @@ namespace Quest_Data_Builder
 
             foreach (var filePath in MainConfig.GameFiles)
             {
-                CustomLogger.WriteLine(LogLevel.Error, $"processing \"{filePath}\"");
+                CustomLogger.WriteLine(LogLevel.Text, $"processing \"{filePath}\"");
                 try
                 {
                     using var reader = new BetterBinaryReader(File.OpenRead(filePath));
@@ -183,7 +183,7 @@ namespace Quest_Data_Builder
             File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations, MainConfig.FileEncoding);
             File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "info.lua"]), "return " + (new GeneratedDataInfo(MainConfig.GameFiles).ToString()), MainConfig.FileEncoding);
 
-            CustomLogger.WriteLine(LogLevel.Error, "Done");
+            CustomLogger.WriteLine(LogLevel.Text, "Successfully completed");
         }
 
         public class Options
