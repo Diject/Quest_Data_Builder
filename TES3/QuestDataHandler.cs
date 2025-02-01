@@ -375,27 +375,28 @@ namespace Quest_Data_Builder.TES3
                         this.QuestObjects.Add(req.Object, questData, stage.Index, null);
 
                         var scriptObj = this.QuestObjects.Add(req.Script, questData, stage.Index, QuestObjectType.Script);
-                        if (scriptObj is null) continue;
 
-                        if (this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
+                        if (req.Script is not null && this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
                         {
                             foreach (var id in ids)
                             {
-                                scriptObj.AddLink(id);
+                                scriptObj?.AddLink(id);
                             }
                         }
 
                         if (req.ValueStr is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
                         {
                             var valObj = this.QuestObjects.Add(req.ValueStr, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                            valObj?.AddLink(req.Script!);
+                            if (req.Script is not null)
+                                valObj?.AddLink(req.Script!);
                             scriptObj?.AddContainedObjectId(req.ValueStr);
                         }
 
                         if (req.Variable is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
                         {
                             var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                            varObj?.AddLink(req.Script!);
+                            if (req.Script is not null)
+                                varObj?.AddLink(req.Script!);
                             scriptObj?.AddContainedObjectId(req.Variable);
                         }
 
