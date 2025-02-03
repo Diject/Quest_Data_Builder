@@ -2,6 +2,7 @@
 using Quest_Data_Builder.TES3.Cell;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -123,6 +124,9 @@ namespace Quest_Data_Builder.TES3.Quest
             if (objectId is null) return null;
             if (base.TryGetValue(objectId, out var qObject))
             {
+                if (type is null || type == QuestObjectType.Object)
+                    qObject.Type = QuestObjectType.Object;
+
                 return qObject;
             }
             else
@@ -144,6 +148,10 @@ namespace Quest_Data_Builder.TES3.Quest
                 {
                     qObject.Starts.Add(quest);
                 }
+
+                if (type is null || type == QuestObjectType.Object)
+                    qObject.Type = QuestObjectType.Object;
+
                 return qObject;
             }
             else
@@ -174,6 +182,10 @@ namespace Quest_Data_Builder.TES3.Quest
                 {
                     qObject.AddStage(qStage.Item1, qStage.Item2);
                 }
+
+                if (objType == QuestObjectType.Object)
+                    qObject.Type = QuestObjectType.Object;
+
                 return qObject;
             }
             else

@@ -104,7 +104,7 @@ namespace Quest_Data_Builder.TES3
 
                         if (qObject is null) continue;
 
-                        var diaActorObject = this.QuestObjects.Add(topic.Actor, itemId, qObject, QuestObjectType.Object);
+                        var diaActorObject = this.QuestObjects.Add(topic.Actor, itemId, qObject, QuestObjectType.Owner);
                     }
                 }
             }
