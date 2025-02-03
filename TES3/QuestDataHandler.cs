@@ -458,6 +458,19 @@ namespace Quest_Data_Builder.TES3
                     qObj.Type = QuestObjectType.Script;
                 }
             }
+
+            // calculating the total number of object locations
+            foreach (var obj in this.QuestObjects.Values)
+            {
+                foreach (var linkedObjId in obj.Links)
+                {
+                    if (!this.QuestObjects.TryGetValue(linkedObjId, out var linkedObj)) continue;
+
+                    if (linkedObj.Type != QuestObjectType.Object && linkedObj.Type != QuestObjectType.Owner) continue;
+
+                    obj.TotalCount += linkedObj.Positions.Count;
+                }
+            }
         }
 
         public void FindVariables()

@@ -53,6 +53,11 @@ namespace Quest_Data_Builder.TES3.Quest
         /// </summary>
         public readonly HashSet<string> Links = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// The total number of the object in the game world. Included positions from leveled lists. Should be set manually
+        /// </summary>
+        public int TotalCount = 0;
+
         public QuestObject(string objectId)
         {
             ObjectId = objectId;
