@@ -462,6 +462,7 @@ namespace Quest_Data_Builder.TES3
             // calculating the total number of object locations
             foreach (var obj in this.QuestObjects.Values)
             {
+                obj.TotalCount = obj.Positions.Count;
                 foreach (var linkedObjId in obj.Links)
                 {
                     if (!this.QuestObjects.TryGetValue(linkedObjId, out var linkedObj)) continue;
