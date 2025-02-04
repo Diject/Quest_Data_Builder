@@ -449,7 +449,7 @@ namespace Quest_Data_Builder.TES3
 
         public void FixQuestObjectData()
         {
-            foreach (var questKey in this.QuestData.Keys)
+            foreach (var questKey in this.dataHandler.Dialogs.Keys)
             {
                 if (this.QuestObjects.TryGetValue(questKey, out var dialogObject))
                 {
@@ -457,9 +457,9 @@ namespace Quest_Data_Builder.TES3
                 }
             }
 
-            foreach (var scriptItem in this.QuestObjectIDsWithScript)
+            foreach (var scriptId in this.dataHandler.Scripts.Keys)
             {
-                if (this.QuestObjects.TryGetValue(scriptItem.Key, out var qObj))
+                if (this.QuestObjects.TryGetValue(scriptId, out var qObj))
                 {
                     qObj.Type = QuestObjectType.Script;
                 }

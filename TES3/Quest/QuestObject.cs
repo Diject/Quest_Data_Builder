@@ -110,6 +110,21 @@ namespace Quest_Data_Builder.TES3.Quest
             if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
             Links.Add(id);
         }
+
+        public void ChangeType(QuestObjectType type)
+        {
+            if (this.Type != type)
+            {
+                if (this.Type == QuestObjectType.Owner && type == QuestObjectType.Object)
+                {
+                    this.Type = QuestObjectType.Object;
+                }
+                else if (type != QuestObjectType.Object && type != QuestObjectType.Owner)
+                {
+                    this.Type = type;
+                }
+            }
+        }
     }
 
     internal class QuestObjectById : Dictionary<string, QuestObject>
@@ -124,8 +139,7 @@ namespace Quest_Data_Builder.TES3.Quest
             if (objectId is null) return null;
             if (base.TryGetValue(objectId, out var qObject))
             {
-                if (type is null || type == QuestObjectType.Object)
-                    qObject.Type = QuestObjectType.Object;
+                qObject.ChangeType(type ?? QuestObjectType.Object);
 
                 return qObject;
             }
@@ -149,8 +163,7 @@ namespace Quest_Data_Builder.TES3.Quest
                     qObject.Starts.Add(quest);
                 }
 
-                if (type is null || type == QuestObjectType.Object)
-                    qObject.Type = QuestObjectType.Object;
+                qObject.ChangeType(type ?? QuestObjectType.Object);
 
                 return qObject;
             }
@@ -183,8 +196,7 @@ namespace Quest_Data_Builder.TES3.Quest
                     qObject.AddStage(qStage.Item1, qStage.Item2);
                 }
 
-                if (objType == QuestObjectType.Object)
-                    qObject.Type = QuestObjectType.Object;
+                qObject.ChangeType(objType);
 
                 return qObject;
             }
