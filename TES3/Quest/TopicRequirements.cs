@@ -4,11 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Quest_Data_Builder.TES3.Quest
 {
-    internal class TopicRequirements : List<QuestRequirement>
+    internal partial class TopicRequirements : List<QuestRequirement>
     {
         public TopicRequirements(TopicRecord topic)
         {
@@ -127,9 +129,9 @@ namespace Quest_Data_Builder.TES3.Quest
                 this.Add(requirement);
             }
 
-            // search for different topics that have higher priority and almost the same requirements
             if (topic.Parent is not null)
             {
+                // search for different topics that have higher priority and almost the same requirements to detect additional requirements
                 for (int i = topic.Parent.Topics.IndexOf(topic) - 1; i >= 0; i--)
                 {
                     var previous = topic.Parent.Topics[i];
@@ -148,8 +150,32 @@ namespace Quest_Data_Builder.TES3.Quest
                         }
                     }
                 }
+
+                // search for requirements from "Choice" command owner if this topic have "PreviousDialogChoice" requirement
+                if (topic.Variables.Exists(a => a.DetailsValue == RequirementType.PreviousDialogChoice))
+                {
+                    for (int i = topic.Parent.Topics.IndexOf(topic) + 1; i < topic.Parent.Topics.Count; i++)
+                    {
+                        var next = topic.Parent.Topics[i];
+
+                        if (!next.Variables.Exists(a => a.DetailsValue == RequirementType.PreviousDialogChoice) &&
+                            next.Result is not null &&
+                            ChoiceRegex().Match(next.Result) is not null)
+                        {
+                            foreach (var req in next.Variables)
+                            {
+                                var requirement = new QuestRequirement(req);
+                                this.Add(requirement);
+                            }
+                            break;
+                        }
+                    }
+                }
             }
 
         }
+
+        [GeneratedRegex(@"choice .+?\d+", RegexOptions.IgnoreCase)]
+        private static partial Regex ChoiceRegex();
     }
 }
