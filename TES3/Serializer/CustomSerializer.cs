@@ -352,20 +352,14 @@ namespace Quest_Data_Builder.TES3.Serializer
                     }
 
                     objectTable.Add("inWorld", objPos.Count);
-                    if (objectItem.Value.Type == QuestObjectType.Object || objectItem.Value.Type == QuestObjectType.Owner)
-                    {
-                        objectTable.Add("total", objectItem.Value.TotalCount);
-                    }
+                    objectTable.Add("total", objectItem.Value.TotalCount);
 
                     objectTable.Add("positions", objPosArray);
                 }
                 else
                 {
                     objectTable.Add("inWorld", 0);
-                    if (objectItem.Value.Type == QuestObjectType.Object || objectItem.Value.Type == QuestObjectType.Owner)
-                    {
-                        objectTable.Add("total", objectItem.Value.TotalCount);
-                    }
+                    objectTable.Add("total", objectItem.Value.TotalCount);
                 }
 
                 if (objectItem.Value.Contains.Count > 0)
