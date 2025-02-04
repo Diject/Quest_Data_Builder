@@ -61,6 +61,11 @@ namespace Quest_Data_Builder
                 {
                     MainConfig.OutputDirectory = options.Output;
                 }
+
+                if (options.RemoveUnused is not null)
+                {
+                    MainConfig.RemoveUnused = options.RemoveUnused ?? false;
+                }
             });
 
             {
@@ -205,6 +210,9 @@ namespace Quest_Data_Builder
 
             [Option('i', "inputFile", Required = false, HelpText = "Input config file with required data.")]
             public string? InputFile { get; set; }
+
+            [Option('u', "removeUnused", Required = false, HelpText = "Remove unused quest objects from the output data. true by default.")]
+            public bool? RemoveUnused { get; set; }
         }
 
         [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?)[ ;\\t]*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]

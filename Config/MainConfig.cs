@@ -39,6 +39,10 @@ namespace Quest_Data_Builder.Config
 
         public static string OutputDirectory = "";
 
+        public static bool RemoveUnused = true;
+
+
+
         public static bool LoadConfiguration(string filename)
         {
             CustomLogger.WriteLine(LogLevel.Info, "Loading configuration file...");
@@ -85,6 +89,11 @@ namespace Quest_Data_Builder.Config
             if ((object)jsonData.maxPos is not null)
             {
                 MaxObjectPositions = (int)jsonData.maxPos;
+            }
+
+            if ((object)jsonData.removeUnused is not null)
+            {
+                RemoveUnused = (bool)jsonData.removeUnused;
             }
 
             if ((object)jsonData.gameFiles is not null)

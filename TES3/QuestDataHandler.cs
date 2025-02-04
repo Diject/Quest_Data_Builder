@@ -1,4 +1,5 @@
-﻿using Quest_Data_Builder.Extentions;
+﻿using Quest_Data_Builder.Config;
+using Quest_Data_Builder.Extentions;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
 using Quest_Data_Builder.TES3.Quest;
@@ -79,6 +80,11 @@ namespace Quest_Data_Builder.TES3
             this.FindQuestObjectPositions();
             this.FixQuestObjectData();
             this.FindVariables();
+
+            if (MainConfig.RemoveUnused)
+            {
+                this.RemoveUnused();
+            }
         }
 
         private void findQuestContainingElements()
@@ -544,6 +550,27 @@ namespace Quest_Data_Builder.TES3
 
         [GeneratedRegex("[\\\"]*([^\\\"]+)[\\\"]*[.](\\S+)")]
         private static partial Regex LocVariableRegex();
+
+
+        private void RemoveUnused()
+        {
+            HashSet<string> unused = new();
+            foreach (var qObjIt in this.QuestObjects)
+            {
+                var qObj = qObjIt.Value;
+                var qObjId = qObjIt.Key;
+
+                if ((qObj.Type == QuestObjectType.Object || qObj.Type == QuestObjectType.Owner) && qObj.InvolvedQuestStages.Count == 0)
+                {
+                    unused.Add(qObjId);
+                }
+            }
+
+            foreach (var id in unused)
+            {
+                this.QuestObjects.Remove(id);
+            }
+        }
     }
 
 }
