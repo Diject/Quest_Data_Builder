@@ -1,4 +1,5 @@
-﻿using Quest_Data_Builder.Extentions;
+﻿using Quest_Data_Builder.Config;
+using Quest_Data_Builder.Extentions;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
 using Quest_Data_Builder.TES3.Quest;
@@ -51,7 +52,7 @@ namespace Quest_Data_Builder.TES3
         public Dictionary<string, ScriptData> ScriptDataById = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Contains data about variables in scripts. By script id; by variable name
+        /// Contains data about local variables in scripts or on objects. By script or object id; by variable name
         /// </summary>
         public ScriptVariables VariablesByScriptId = new(StringComparer.OrdinalIgnoreCase);
 
@@ -79,6 +80,11 @@ namespace Quest_Data_Builder.TES3
             this.FindQuestObjectPositions();
             this.FixQuestObjectData();
             this.FindVariables();
+
+            if (MainConfig.RemoveUnused)
+            {
+                this.RemoveUnused();
+            }
         }
 
         private void findQuestContainingElements()
@@ -104,7 +110,7 @@ namespace Quest_Data_Builder.TES3
 
                         if (qObject is null) continue;
 
-                        var diaActorObject = this.QuestObjects.Add(topic.Actor, itemId, qObject, QuestObjectType.Object);
+                        var diaActorObject = this.QuestObjects.Add(topic.Actor, itemId, qObject, QuestObjectType.Owner);
                     }
                 }
             }
@@ -188,7 +194,7 @@ namespace Quest_Data_Builder.TES3
             return ret;
         }
 
-        [GeneratedRegex("(?:Journal|SetJournalIndex)[ ,]+\"*(.+?)\"*[ ,]+(\\d+)", RegexOptions.IgnoreCase)]
+        [GeneratedRegex("(?:Journal|SetJournalIndex)[ ,]+\\\"*([^<>!=]+?)\\\"*[ ,]+(\\d+)", RegexOptions.IgnoreCase)]
         private static partial Regex JournalRegex();
 
         private void addQuestContainingElement(QuestContainingElement questContainingElement)
@@ -230,9 +236,13 @@ namespace Quest_Data_Builder.TES3
 
                     foreach (var element in dialogData[stage.Index])
                     {
+                        ScriptBlock scriptBlock;
+
                         if (element.Type == RecordType.Topic)
                         {
                             stage.AddRequirements(element.Requirements);
+
+                            scriptBlock = new ScriptBlock(((TopicRecord?)element.Record!).Result ?? "");
                         }
                         else if (element.Type == RecordType.Script)
                         {
@@ -242,57 +252,63 @@ namespace Quest_Data_Builder.TES3
                             scriptData.BlockData.UpdateToIncludeStartScriptData(dataHandler, this);
                             this.ScriptDataById.TryAdd(scriptData.Id, scriptData);
 
-                            var scriptBlock = scriptData.BlockData;
-                            if (scriptBlock.FindJournalFunction(element.QuestId, stage.Index.ToString(), out var journalResults))
+                            scriptBlock = scriptData.BlockData;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+
+                        // find journal functions in the script block that represent the script
+                        if (scriptBlock.FindJournalFunction(element.QuestId, stage.Index.ToString(), out var journalResults))
+                        {
+                            foreach (var result in journalResults)
                             {
-                                foreach (var result in journalResults)
+                                var requirements = result.Requirements ?? new();
+
+                                HashSet<string> processedVars = new(StringComparer.OrdinalIgnoreCase);
+
+                                for (int i = requirements.Count - 1; i >= 0; i--)
                                 {
-                                    var requirements = result.Requirements ?? new();
+                                    var req = requirements[i];
 
-                                    HashSet<string> processedVars = new(StringComparer.OrdinalIgnoreCase);
+                                    if (req.Type != RequirementType.CustomLocal || processedVars.Contains(req.Variable ?? "") || req.Object is not null) continue;
 
-                                    for (int i = requirements.Count - 1; i >= 0; i--)
+                                    var variableData = scriptBlock.GetVariableData(req.Variable!);
+                                    if (variableData is null) continue;
+
+                                    // to remove local vars like doOnce
+                                    if (variableData.Count == 1 &&
+                                        variableData[0].BlockId == requirements.ScriptBlock?.Id &&
+                                        !ConditionConverter.CheckCondition((double?)variableData[0].Value, (double?)req.Value, req.Operator))
                                     {
-                                        var req = requirements[i];
-
-                                        if (req.Type != RequirementType.CustomLocal || processedVars.Contains(req.Variable ?? "") || req.Object is not null) continue;
-
-                                        var variableData = scriptBlock.GetVariableData(req.Variable!);
-                                        if (variableData is null) continue;
-
-                                        // to remove local vars like doOnce
-                                        if (variableData.Count == 1 &&
-                                            variableData[0].BlockId == requirements.ScriptBlock?.Id &&
-                                            !ConditionConverter.CheckCondition((double?)variableData[0].Value, (double?)req.Value, req.Operator))
-                                        {
-                                            processedVars.Add(req.Variable ?? "");
-                                            requirements.RemoveAt(i);
-                                            continue;
-                                        }
-
-                                        // to replace requirements of vars that to be present once, but not in the same block
-                                        if (variableData.Count == 1 &&
-                                            variableData[0].BlockId != requirements.ScriptBlock?.Id &&
-                                            ConditionConverter.CheckCondition((double?)variableData[0].Value, (double?)req.Value, req.Operator))
-                                        {
-                                            processedVars.Add(req.Variable ?? "");
-                                            requirements.RemoveAt(i);
-                                            if (variableData[0].Requirements is not null)
-                                            {
-                                                foreach (var r in variableData[0].Requirements!)
-                                                {
-                                                    if (!(r.Type == RequirementType.CustomLocal && (processedVars.Contains(req.Variable ?? "") || r.Variable?.ToLower() == req.Variable?.ToLower())))
-                                                    {
-                                                        requirements.Add(r);
-                                                    }
-                                                }
-                                                i = requirements.Count; // restart the cycle
-                                            }
-                                        }
+                                        processedVars.Add(req.Variable ?? "");
+                                        requirements.RemoveAt(i);
+                                        continue;
                                     }
 
-                                    stage.Requirements.Add(requirements);
+                                    // to replace requirements of vars that to be present once, but not in the same block
+                                    if (variableData.Count == 1 &&
+                                        variableData[0].BlockId != requirements.ScriptBlock?.Id &&
+                                        ConditionConverter.CheckCondition((double?)variableData[0].Value, (double?)req.Value, req.Operator))
+                                    {
+                                        processedVars.Add(req.Variable ?? "");
+                                        requirements.RemoveAt(i);
+                                        if (variableData[0].Requirements is not null)
+                                        {
+                                            foreach (var r in variableData[0].Requirements!)
+                                            {
+                                                if (!(r.Type == RequirementType.CustomLocal && (processedVars.Contains(req.Variable ?? "") || r.Variable?.ToLower() == req.Variable?.ToLower())))
+                                                {
+                                                    requirements.Add(r);
+                                                }
+                                            }
+                                            i = requirements.Count; // restart the cycle
+                                        }
+                                    }
                                 }
+
+                                stage.Requirements.Add(requirements);
                             }
                         }
                     }
@@ -365,26 +381,29 @@ namespace Quest_Data_Builder.TES3
                         this.QuestObjects.Add(req.Object, questData, stage.Index, null);
 
                         var scriptObj = this.QuestObjects.Add(req.Script, questData, stage.Index, QuestObjectType.Script);
-                        if (scriptObj is not null && this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
+
+                        if (req.Script is not null && this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
                         {
                             foreach (var id in ids)
                             {
-                                scriptObj.AddContainedObjectId(id);
+                                scriptObj?.AddLink(id);
                             }
                         }
 
-                        var valObj = this.QuestObjects.Add(req.ValueStr, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                        if (valObj is not null && req.Script is not null)
+                        if (req.ValueStr is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
                         {
-                            valObj.AddContainedObjectId(req.Script);
-                            scriptObj!.AddContainedObjectId(req.ValueStr!);
+                            var valObj = this.QuestObjects.Add(req.ValueStr, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
+                            if (req.Script is not null)
+                                valObj?.AddLink(req.Script!);
+                            scriptObj?.AddContainedObjectId(req.ValueStr);
                         }
 
-                        var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                        if (varObj is not null && req.Script is not null)
+                        if (req.Variable is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
                         {
-                            varObj.AddContainedObjectId(req.Script);
-                            scriptObj!.AddContainedObjectId(req.Variable!);
+                            var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
+                            if (req.Script is not null)
+                                varObj?.AddLink(req.Script!);
+                            scriptObj?.AddContainedObjectId(req.Variable);
                         }
 
                     }
@@ -430,7 +449,7 @@ namespace Quest_Data_Builder.TES3
 
         public void FixQuestObjectData()
         {
-            foreach (var questKey in this.QuestData.Keys)
+            foreach (var questKey in this.dataHandler.Dialogs.Keys)
             {
                 if (this.QuestObjects.TryGetValue(questKey, out var dialogObject))
                 {
@@ -438,11 +457,25 @@ namespace Quest_Data_Builder.TES3
                 }
             }
 
-            foreach (var scriptItem in this.QuestObjectIDsWithScript)
+            foreach (var scriptId in this.dataHandler.Scripts.Keys)
             {
-                if (this.QuestObjects.TryGetValue(scriptItem.Key, out var qObj))
+                if (this.QuestObjects.TryGetValue(scriptId, out var qObj))
                 {
                     qObj.Type = QuestObjectType.Script;
+                }
+            }
+
+            // calculating the total number of object locations
+            foreach (var obj in this.QuestObjects.Values)
+            {
+                obj.TotalCount = obj.Positions.Count;
+                foreach (var linkedObjId in obj.Links)
+                {
+                    if (!this.QuestObjects.TryGetValue(linkedObjId, out var linkedObj)) continue;
+
+                    if (linkedObj.Type != QuestObjectType.Object && linkedObj.Type != QuestObjectType.Owner) continue;
+
+                    obj.TotalCount += linkedObj.Positions.Count;
                 }
             }
         }
@@ -471,13 +504,73 @@ namespace Quest_Data_Builder.TES3
                     }
                     else
                     {
-                        this.GlobalVariables.TryAdd(variableName, new());
-                        this.GlobalVariables[variableName].AddRange(variableList);
+                        // check if it is a local variable of an object
+                        var match = LocVariableRegex().Match(variableName);
+                        if (match.Success)
+                        {
+                            var ownerId = match.Groups[1].Value;
+                            var varId = match.Groups[2].Value;
+
+                            if (!this.QuestObjects.TryGetValue(ownerId, out var ownerObject))
+                            {
+                                var type = QuestObjectType.Owner;
+                                if (this.dataHandler.Scripts.ContainsKey(ownerId))
+                                {
+                                    type = QuestObjectType.Script;
+                                }
+
+                                ownerObject = this.QuestObjects.Add(ownerId, type);
+                            }
+
+                            if (!this.QuestObjects.TryGetValue(varId, out var varObject))
+                            {
+                                varObject = this.QuestObjects.Add(varId, QuestObjectType.Local);
+                            }
+
+                            if (ownerObject is null || varObject is null) continue;
+
+                            ownerObject.AddContainedObjectId(varId);
+                            varObject.AddLink(ownerId);
+
+                            this.VariablesByScriptId.TryAdd(ownerId, new(StringComparer.OrdinalIgnoreCase));
+                            if (!this.VariablesByScriptId[ownerId].TryAdd(varId, variableList))
+                            {
+                                this.VariablesByScriptId[ownerId][varId].AddRange(variableList);
+                            }
+                        }
+                        else
+                        {
+                            this.GlobalVariables.TryAdd(variableName, new());
+                            this.GlobalVariables[variableName].AddRange(variableList);
+                        }
                     }
                 }
             }
         }
 
+        [GeneratedRegex("[\\\"]*([^\\\"]+)[\\\"]*[.](\\S+)")]
+        private static partial Regex LocVariableRegex();
+
+
+        private void RemoveUnused()
+        {
+            HashSet<string> unused = new();
+            foreach (var qObjIt in this.QuestObjects)
+            {
+                var qObj = qObjIt.Value;
+                var qObjId = qObjIt.Key;
+
+                if ((qObj.Type == QuestObjectType.Object || qObj.Type == QuestObjectType.Owner) && qObj.InvolvedQuestStages.Count == 0)
+                {
+                    unused.Add(qObjId);
+                }
+            }
+
+            foreach (var id in unused)
+            {
+                this.QuestObjects.Remove(id);
+            }
+        }
     }
 
 }

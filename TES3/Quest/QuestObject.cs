@@ -1,6 +1,8 @@
-﻿using Quest_Data_Builder.TES3.Cell;
+﻿using Quest_Data_Builder.Logger;
+using Quest_Data_Builder.TES3.Cell;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -52,6 +54,11 @@ namespace Quest_Data_Builder.TES3.Quest
         /// </summary>
         public readonly HashSet<string> Links = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// The total number of the object in the game world. Included positions from leveled lists. Should be set manually
+        /// </summary>
+        public int TotalCount = 0;
+
         public QuestObject(string objectId)
         {
             ObjectId = objectId;
@@ -63,6 +70,8 @@ namespace Quest_Data_Builder.TES3.Quest
             {
                 Type = (QuestObjectType)type;
             }
+
+            CustomLogger.WriteLine(LogLevel.Info, $"new quest object {objectId}, type {Type}");
         }
 
         public QuestObject(string objectId, QuestObjectType? type, string originId) : this(objectId, type)
@@ -85,13 +94,36 @@ namespace Quest_Data_Builder.TES3.Quest
 
         public void AddContainedObjectId(QuestObject qObject)
         {
+            if (String.Equals(qObject.ObjectId, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
             Contains.Add(qObject.ObjectId);
             qObject.Links.Add(this.ObjectId);
         }
 
         public void AddContainedObjectId(string id)
         {
+            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
             Contains.Add(id);
+        }
+
+        public void AddLink(string id)
+        {
+            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
+            Links.Add(id);
+        }
+
+        public void ChangeType(QuestObjectType type)
+        {
+            if (this.Type != type)
+            {
+                if (this.Type == QuestObjectType.Owner && type == QuestObjectType.Object)
+                {
+                    this.Type = QuestObjectType.Object;
+                }
+                else if (type != QuestObjectType.Object && type != QuestObjectType.Owner)
+                {
+                    this.Type = type;
+                }
+            }
         }
     }
 
@@ -107,6 +139,8 @@ namespace Quest_Data_Builder.TES3.Quest
             if (objectId is null) return null;
             if (base.TryGetValue(objectId, out var qObject))
             {
+                qObject.ChangeType(type ?? QuestObjectType.Object);
+
                 return qObject;
             }
             else
@@ -128,6 +162,9 @@ namespace Quest_Data_Builder.TES3.Quest
                 {
                     qObject.Starts.Add(quest);
                 }
+
+                qObject.ChangeType(type ?? QuestObjectType.Object);
+
                 return qObject;
             }
             else
@@ -158,6 +195,9 @@ namespace Quest_Data_Builder.TES3.Quest
                 {
                     qObject.AddStage(qStage.Item1, qStage.Item2);
                 }
+
+                qObject.ChangeType(objType);
+
                 return qObject;
             }
             else

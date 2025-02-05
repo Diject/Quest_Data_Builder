@@ -9,10 +9,10 @@ namespace Quest_Data_Builder.TES3.Serializer
 {
     class GeneratedDataInfo
     {
-        static readonly int version = 3;
-        readonly SortedList<uint, string> files;
+        static readonly int version = 4;
+        readonly List<string> files;
 
-        public GeneratedDataInfo(SortedList<uint, string> files)
+        public GeneratedDataInfo(List<string> files)
         {
             this.files = files;
         }
@@ -27,7 +27,7 @@ namespace Quest_Data_Builder.TES3.Serializer
             var filesTable = new LTable();
             foreach (var file in files)
             {
-                var filename = Path.GetFileName(file.Value);
+                var filename = Path.GetFileName(file);
                 if (filename is null) continue;
                 filesTable.Add(filename.ToLower());
             }

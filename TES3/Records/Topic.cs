@@ -155,7 +155,7 @@ namespace Quest_Data_Builder.TES3.Records
                             }
                         case "FLTV":
                             {
-                                Variables.Last().FLTV = reader.ReadUInt32();
+                                Variables.Last().FLTV = reader.ReadSingle();
                                 break;
                             }
                         case "BNAM":

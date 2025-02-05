@@ -56,7 +56,7 @@ namespace Quest_Data_Builder.TES3.Serializer
 ---@class questDataGenerator.objectInfo
 ---@field type questDataGenerator.questObjectType
 ---@field inWorld integer
----@field parent string|nil
+---@field total integer
 ---@field starts string[]|nil
 ---@field stages questDataGenerator.questTopicInfo[]
 ---@field positions questDataGenerator.objectPosition[]

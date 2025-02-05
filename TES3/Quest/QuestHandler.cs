@@ -42,6 +42,8 @@ namespace Quest_Data_Builder.TES3.Quest
                     Stages[(uint)topic.Index!] = new QuestStage(topic);
                 }
             }
+
+            CustomLogger.WriteLine(LogLevel.Info, $"new quest handler {Id}");
         }
     }
 
