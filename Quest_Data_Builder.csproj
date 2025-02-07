@@ -9,9 +9,9 @@
     <StartupObject>Quest_Data_Builder.Program</StartupObject>
     <AssemblyName>Quest Data Builder</AssemblyName>
     <ApplicationIcon>qdb.ico</ApplicationIcon>
-    <FileVersion>1.0.6</FileVersion>
-    <AssemblyVersion>1.0.6</AssemblyVersion>
-    <Version>1.0.6</Version>
+    <FileVersion>1.0.8</FileVersion>
+    <AssemblyVersion>1.0.8</AssemblyVersion>
+    <Version>1.0.8</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <GenerateAssemblyInfo>True</GenerateAssemblyInfo>

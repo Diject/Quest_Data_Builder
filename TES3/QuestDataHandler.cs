@@ -72,19 +72,27 @@ namespace Quest_Data_Builder.TES3
         {
             dataHandler = handler;
 
-            this.findQuestContainingElements();
-
-            // the order should stay the same
-            this.FindQuestData();
-            this.FindQuestRecord();
-            this.FindQuestObjectPositions();
-            this.FixQuestObjectData();
-            this.FindVariables();
-
-            if (MainConfig.RemoveUnused)
+            try
             {
-                this.RemoveUnused();
+                this.findQuestContainingElements();
+
+                // the order should stay the same
+                this.FindQuestData();
+                this.FindQuestRecord();
+                this.FindQuestObjectPositions();
+                this.FixQuestObjectData();
+                this.FindVariables();
+
+                if (MainConfig.RemoveUnused)
+                {
+                    this.RemoveUnused();
+                }
             }
+            catch (Exception ex)
+            {
+                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+            }
+                
         }
 
         private void findQuestContainingElements()

@@ -44,6 +44,8 @@ namespace Quest_Data_Builder.TES3.Cell
 
         public void Add(CellRecord cell, CellReference reference, QuestObject questObject)
         {
+            if (reference.Position is null) return;
+
             var cellPos = new QuestObjectPosition(cell.UniqueName, questObject, (Vector3)reference.Position!,
                 !cell.IsInterior ? new (cell.GridX, cell.GridY) : null);
 
