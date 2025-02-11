@@ -508,7 +508,7 @@ namespace Quest_Data_Builder.TES3
                         if (!this.QuestObjects.ContainsKey(scriptId)) continue;
 
                         this.VariablesByScriptId.TryAdd(scriptId, new(StringComparer.OrdinalIgnoreCase));
-                        this.VariablesByScriptId[scriptId].Add(variableName, variableList);
+                        this.VariablesByScriptId[scriptId].TryAdd(variableName, variableList);
                     }
                     else
                     {
