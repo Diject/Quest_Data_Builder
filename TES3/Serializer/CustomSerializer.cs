@@ -352,23 +352,39 @@ namespace Quest_Data_Builder.TES3.Serializer
                     }
 
                     objectTable.Add("inWorld", objPos.Count);
-                    objectTable.Add("total", objectItem.Value.TotalCount);
+
+                    double normalized = 0;
+                    foreach (var itemCount in objectItem.Value.Links.Values)
+                        normalized += itemCount.NormalizedCount;
+
+                    objectTable.Add("total", (int)Math.Round(objectItem.Value.TotalCount + normalized));
+                    objectTable.Add("norm", Math.Round((decimal)(objPos.Count + normalized), 2));
 
                     objectTable.Add("positions", objPosArray);
                 }
                 else
                 {
                     objectTable.Add("inWorld", 0);
-                    objectTable.Add("total", objectItem.Value.TotalCount);
+
+                    double normalized = 0;
+                    foreach (var itemCount in objectItem.Value.Links.Values)
+                        normalized += itemCount.NormalizedCount;
+
+                    objectTable.Add("total", (int)Math.Round(objectItem.Value.TotalCount + normalized));
+                    objectTable.Add("norm", Math.Round((decimal)normalized, 2));
                 }
 
                 if (objectItem.Value.Contains.Count > 0)
                 {
                     var containedArray = newArray();
 
-                    foreach (var id in objectItem.Value.Contains)
+                    var list = objectItem.Value.Contains.Select(a => new Tuple<string, decimal>(a.Key, Math.Round((decimal)a.Value.NormalizedCount, 3))).ToList();
+                    foreach (var tuple in list.OrderByDescending(a => a.Item2))
                     {
-                        containedArray.Add(id.ToLower());
+                        var arr = newArray();
+                        arr.Add(tuple.Item1.ToLower());
+                        arr.Add(tuple.Item2);
+                        containedArray.Add(arr);
                     }
 
                     objectTable.Add("contains", containedArray);
@@ -378,9 +394,13 @@ namespace Quest_Data_Builder.TES3.Serializer
                 {
                     var containedArray = newArray();
 
-                    foreach (var id in objectItem.Value.Links)
+                    var list = objectItem.Value.Links.Select(a => new Tuple<string, decimal>(a.Key, Math.Round((decimal)a.Value.NormalizedCount, 3))).ToList();
+                    foreach (var tuple in list.OrderByDescending(a => a.Item2))
                     {
-                        containedArray.Add(id.ToLower());
+                        var arr = newArray();
+                        arr.Add(tuple.Item1.ToLower());
+                        arr.Add(tuple.Item2);
+                        containedArray.Add(arr);
                     }
 
                     objectTable.Add("links", containedArray);

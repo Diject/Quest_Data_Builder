@@ -1,16 +1,21 @@
 ﻿using Quest_Data_Builder.Core;
 using Quest_Data_Builder.Logger;
+using Quest_Data_Builder.TES3.Handlers;
 using Quest_Data_Builder.TES3.Variables;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Records
 {
     internal class LeveledItem : Record
     {
+        public LeveledItemHandler? Handler {  get; private set; }
+
         public readonly string Type = RecordType.LeveledItem;
         public readonly string Id = "";
         public readonly uint Data;
@@ -25,21 +30,13 @@ namespace Quest_Data_Builder.TES3.Records
 
         public bool IsDeleted { get; private set; } = false;
 
-        public bool CalculateForEach
-        {
-            get
-            {
-                return (this.Data & 0x1) != 0;
-            }
-        }
+        public bool CalculateForEach => (this.Data & 0x1) != 0;
 
-        public bool CalculateForAllLevelsLessOrEqualPC
-        {
-            get
-            {
-                return (this.Data & 0x2) != 0;
-            }
-        }
+        public bool CalculateForAllLevelsLessOrEqualPC => (this.Data & 0x2) != 0;
+
+        public readonly double ChanceForItem;
+
+        private Dictionary<string, double>? cachedChances;
 
 
         public LeveledItem(RecordData recordData) : base(recordData)
@@ -126,6 +123,24 @@ namespace Quest_Data_Builder.TES3.Records
                     }
                 }
             }
+
+            if (this.Items.Count > 0)
+            {
+                double chanceForOneRecord = 1 - this.ChanceNone * 0.01;
+                chanceForOneRecord /= this.Items.Count;
+
+                this.ChanceForItem = chanceForOneRecord;
+            }
+            else
+            {
+                this.ChanceForItem = 0;
+            }
+        }
+
+
+        public void SetHandler(LeveledItemHandler handler)
+        {
+            this.Handler = handler;
         }
 
         public void Merge(LeveledItem newRecord)
@@ -136,6 +151,50 @@ namespace Quest_Data_Builder.TES3.Records
             {
                 this.CarriedItems.Add(item);
             }
+        }
+
+
+        public ReadOnlyDictionary<string, double>? GetChances(int depth)
+        {
+            if (depth == 0) return null;
+
+            if (this.cachedChances is not null) return this.cachedChances.AsReadOnly();
+
+            Dictionary<string, double> chances = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in this.Items)
+            {
+                item.IdentifyType(this.Handler);
+
+                if (item.Type == LeveledListItemType.LeveledList)
+                {
+                    var levListObj = (LeveledItem?)item.Object;
+                    var nestedChances = levListObj?.GetChances(depth - 1);
+
+                    if (nestedChances is null) continue;
+
+                    foreach (var nestedChance in nestedChances)
+                    {
+                        double chance = nestedChance.Value * this.ChanceForItem;
+                        if (!chances.TryAdd(nestedChance.Key, chance))
+                        {
+                            chances[nestedChance.Key] += chance;
+                        }
+                    }
+
+                }
+                else
+                {
+                    if (!chances.TryAdd(item.Id, this.ChanceForItem))
+                    {
+                        chances[item.Id] += this.ChanceForItem;
+                    }
+                }
+            }
+
+            this.cachedChances = chances;
+
+            return chances.AsReadOnly();
         }
     }
 }

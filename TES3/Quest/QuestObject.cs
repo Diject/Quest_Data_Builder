@@ -1,5 +1,6 @@
 ﻿using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
+using Quest_Data_Builder.TES3.Variables;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -47,15 +48,15 @@ namespace Quest_Data_Builder.TES3.Quest
         /// <summary>
         /// Ids of objects that this container owns
         /// </summary>
-        public readonly HashSet<string> Contains = new(StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string, ItemCount> Contains = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Ids of objects that owns this object. Not for script types
         /// </summary>
-        public readonly HashSet<string> Links = new(StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string, ItemCount> Links = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// The total number of the object in the game world. Included positions from leveled lists. Should be set manually
+        /// The total number of the object in the game world. May not be accurate for objects from leveled lists
         /// </summary>
         public int TotalCount = 0;
 
@@ -92,23 +93,33 @@ namespace Quest_Data_Builder.TES3.Quest
             Positions.Add(position);
         }
 
-        public void AddContainedObjectId(QuestObject qObject)
+        public void AddContainedObjectId(QuestObject qObject, ItemCount? itemCount)
         {
             if (String.Equals(qObject.ObjectId, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
-            Contains.Add(qObject.ObjectId);
-            qObject.Links.Add(this.ObjectId);
+
+            itemCount ??= new();
+
+            if (!Contains.TryAdd(qObject.ObjectId, itemCount))
+            {
+                Contains[qObject.ObjectId] += itemCount;
+            }
+
+            if (!qObject.Links.TryAdd(this.ObjectId, itemCount))
+            {
+                qObject.Links[this.ObjectId] += itemCount;
+            }
         }
 
         public void AddContainedObjectId(string id)
         {
             if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
-            Contains.Add(id);
+            Contains.TryAdd(id, new());
         }
 
         public void AddLink(string id)
         {
             if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
-            Links.Add(id);
+            Links.TryAdd(id, new());
         }
 
         public void ChangeType(QuestObjectType type)
@@ -184,13 +195,13 @@ namespace Quest_Data_Builder.TES3.Quest
         /// <summary>
         /// For objects that owns a quest object. For "Owner", "ScriptData" and "Dialog" types. Returns container object
         /// </summary>
-        public QuestObject? Add(string? ownerId, string? objectId, QuestObject questObject, QuestObjectType objType)
+        public QuestObject? Add(string? ownerId, string? objectId, QuestObject questObject, QuestObjectType objType, ItemCount? carriedItem)
         {
             if (ownerId is null || objectId is null) return null;
 
             if (base.TryGetValue(ownerId, out var qObject))
             {
-                qObject.AddContainedObjectId(questObject);
+                qObject.AddContainedObjectId(questObject, carriedItem);
                 foreach (var qStage in questObject.InvolvedQuestStages)
                 {
                     qObject.AddStage(qStage.Item1, qStage.Item2);
@@ -204,7 +215,7 @@ namespace Quest_Data_Builder.TES3.Quest
             {
                 var newObj = new QuestObject(ownerId, objType, questObject.ObjectId);
                 newObj.InvolvedQuestStages.AddRange(questObject.InvolvedQuestStages);
-                newObj.AddContainedObjectId(questObject);
+                newObj.AddContainedObjectId(questObject, carriedItem);
                 base.Add(ownerId, newObj);
                 return newObj;
             }

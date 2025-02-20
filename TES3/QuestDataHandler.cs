@@ -5,6 +5,7 @@ using Quest_Data_Builder.TES3.Cell;
 using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Script;
+using Quest_Data_Builder.TES3.Variables;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -114,11 +115,14 @@ namespace Quest_Data_Builder.TES3
                     foreach (Match match in matches)
                     {
                         var itemId = match.Groups[1].Value;
+                        var itemCountStr = match.Groups[2].Value;
                         var qObject = this.QuestObjects.Add(itemId, QuestObjectType.Object);
 
                         if (qObject is null) continue;
 
-                        var diaActorObject = this.QuestObjects.Add(topic.Actor, itemId, qObject, QuestObjectType.Owner);
+                        int.TryParse(itemCountStr, out var itemCount);
+
+                        var diaActorObject = this.QuestObjects.Add(topic.Actor, itemId, qObject, QuestObjectType.Owner, new(itemCount, itemCount));
                     }
                 }
             }
@@ -136,11 +140,15 @@ namespace Quest_Data_Builder.TES3
                 foreach (Match match in matches)
                 {
                     var itemId = match.Groups[1].Value;
+                    var itemCountStr = match.Groups[2].Value;
+
                     var qObject = this.QuestObjects.Add(itemId, QuestObjectType.Object);
 
                     if (qObject is null) continue;
 
-                    var scrObject = this.QuestObjects.Add(script.Value.Id, itemId, qObject, QuestObjectType.Script);
+                    int.TryParse(itemCountStr, out var itemCount);
+
+                    var scrObject = this.QuestObjects.Add(script.Value.Id, itemId, qObject, QuestObjectType.Script, new(itemCount, itemCount));
                 }
             }
         }
@@ -425,7 +433,7 @@ namespace Quest_Data_Builder.TES3
                 {
                     foreach (var objId in item.Value)
                     {
-                        var qObj = this.QuestObjects.Add(objId, item.Key, qObject, QuestObjectType.Owner);
+                        var qObj = this.QuestObjects.Add(objId, item.Key, qObject, QuestObjectType.Owner, null);
                         qObj!.AddContainedObjectId(item.Key);
                     }
                 }
@@ -435,14 +443,14 @@ namespace Quest_Data_Builder.TES3
             dataHandler.IterateItemsInContainers(this.QuestObjects, itemInContainersAction);
         }
 
-        private void itemInActorsAction(string itemId, ActorRecord actorRecord, QuestObject questObject, int itemCount)
+        private void itemInActorsAction(string itemId, ActorRecord actorRecord, QuestObject questObject, ItemCount carriedItem)
         {
-            this.QuestObjects.Add(actorRecord.Id, itemId, questObject, QuestObjectType.Owner);
+            this.QuestObjects.Add(actorRecord.Id, itemId, questObject, QuestObjectType.Owner, carriedItem);
         }
 
-        private void itemInContainersAction(string itemId, ContainerRecord containerRecord, QuestObject questObject, int itemCount)
+        private void itemInContainersAction(string itemId, ContainerRecord containerRecord, QuestObject questObject, ItemCount carriedItem)
         {
-            this.QuestObjects.Add(containerRecord.Id, itemId, questObject, QuestObjectType.Owner);
+            this.QuestObjects.Add(containerRecord.Id, itemId, questObject, QuestObjectType.Owner, carriedItem);
         }
 
         private void cellRefAction(CellRecord cell, CellReference reference, QuestObject questObject)
@@ -477,7 +485,7 @@ namespace Quest_Data_Builder.TES3
             foreach (var obj in this.QuestObjects.Values)
             {
                 obj.TotalCount = obj.Positions.Count;
-                foreach (var linkedObjId in obj.Links)
+                foreach (var linkedObjId in obj.Links.Keys)
                 {
                     if (!this.QuestObjects.TryGetValue(linkedObjId, out var linkedObj)) continue;
 

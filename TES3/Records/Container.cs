@@ -1,5 +1,6 @@
 ﻿using Quest_Data_Builder.Core;
 using Quest_Data_Builder.Logger;
+using Quest_Data_Builder.TES3.Variables;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace Quest_Data_Builder.TES3.Records
         public readonly string Type = RecordType.Container;
         public readonly string Id = "";
         public string? Script { get; private set; }
-        public readonly Dictionary<string, int> CarriedItems = new(StringComparer.OrdinalIgnoreCase);
+        public readonly Inventory CarriedItems = new();
 
         public bool IsDeleted { get; private set; } = false;
 
