@@ -53,10 +53,5 @@ namespace Quest_Data_Builder.TES3.Variables
             this.Add(id, normalizedCount);
             return true;
         }
-
-        public void Clear()
-        {
-            base.Clear();
-        }
     }
 }
