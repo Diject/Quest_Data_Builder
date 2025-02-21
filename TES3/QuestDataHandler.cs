@@ -330,6 +330,7 @@ namespace Quest_Data_Builder.TES3
                     }
                 }
 
+                // Code to find next quest stages
                 for (int i = 0; i < quest.Stages.Count; i++)
                 {
                     var stage = quest.Stages.Values[i];
@@ -346,6 +347,7 @@ namespace Quest_Data_Builder.TES3
                             }
                         }
                     }
+
                     for (int j = i + 1; j < quest.Stages.Count; j++)
                     {
                         var stageToCompare = quest.Stages.Values[j];
@@ -353,6 +355,20 @@ namespace Quest_Data_Builder.TES3
                         if (stageToCompare.Requirements.IsContainsJornalIndexRequirement(quest.Id, stage.Index))
                         {
                             stage.AddNextStage(stageToCompare);
+                        }
+                    }
+
+                    if (stage.NextStages.Count == 0 && i + 1 < quest.Stages.Count &&
+                        quest.Stages.Values[i + 1].Requirements.Count == 0)
+                    {
+                        for (int j = i + 1; j < quest.Stages.Count; j++)
+                        {
+                            var stageToCompare = quest.Stages.Values[j];
+
+                            stage.AddNextStage(stageToCompare);
+
+                            if (stageToCompare.Requirements.Count != 0)
+                                break;
                         }
                     }
                 }
