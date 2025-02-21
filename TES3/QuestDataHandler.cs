@@ -406,10 +406,17 @@ namespace Quest_Data_Builder.TES3
                 }
             }
 
+            // add objects from requirements
             foreach (var questData in QuestData.Values)
                 foreach(var stage in questData.Stages.Values)
                     foreach(var req in stage.Requirements.SelectMany(a => a))
                     {
+                        if (req.Type == RequirementType.CustomDialogue)
+                        {
+                            this.QuestObjects.Add(req.Variable, questData, stage.Index, QuestObjectType.Dialog);
+                            continue;
+                        }
+
                         this.QuestObjects.Add(req.Object, questData, stage.Index, null);
 
                         var scriptObj = this.QuestObjects.Add(req.Script, questData, stage.Index, QuestObjectType.Script);
@@ -481,14 +488,6 @@ namespace Quest_Data_Builder.TES3
 
         public void FixQuestObjectData()
         {
-            foreach (var questKey in this.dataHandler.Dialogs.Keys)
-            {
-                if (this.QuestObjects.TryGetValue(questKey, out var dialogObject))
-                {
-                    dialogObject.Type = QuestObjectType.Dialog;
-                }
-            }
-
             foreach (var scriptId in this.dataHandler.Scripts.Keys)
             {
                 if (this.QuestObjects.TryGetValue(scriptId, out var qObj))
