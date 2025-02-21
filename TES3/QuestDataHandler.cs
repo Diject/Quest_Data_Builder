@@ -430,7 +430,7 @@ namespace Quest_Data_Builder.TES3
                             scriptObj?.AddContainedObjectId(req.ValueStr);
                         }
 
-                        if (req.Variable is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
+                        if (req.Variable is not null && !String.Equals(req.Variable, "player", StringComparison.OrdinalIgnoreCase))
                         {
                             var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
                             if (req.Script is not null)
