@@ -10,24 +10,24 @@ namespace Quest_Data_Builder.TES3.Serializer
     {
         public static string LuaAnnotations = @"
 ---@class questDataGenerator.requirementData
----@field type string
----@field operator integer
----@field value number|string|nil
----@field variable string|nil
----@field object string|nil
----@field skill integer|nil
----@field attribute integer|nil
----@field script string|nil
+---@field type string requirement type id
+---@field operator integer equal = 48, notEqual = 49, greater = 50, greaterOrEqual = 51, less = 52, lessOrEqual = 53,
+---@field value number|string|nil : object->variable (operator) value
+---@field variable string|nil : object->variable (operator) value
+---@field object string|nil : object->variable (operator) value
+---@field skill integer|nil skill id
+---@field attribute integer|nil attribute id
+---@field script string|nil script id if this requrement from a script
 
 ---@alias questDataGenerator.requirementBlock questDataGenerator.requirementData[]
 
 ---@class questDataGenerator.stageData
----@field id string
+---@field id string dialogue id
 ---@field requirements questDataGenerator.requirementBlock[]
----@field next integer[]
----@field nextIndex integer|nil
----@field finished boolean|nil
----@field restart boolean|nil
+---@field next integer[] possible next indexes
+---@field nextIndex integer|nil following index
+---@field finished boolean|nil finished flag
+---@field restart boolean|nil restart flag
 
 
 ---@alias questDataGenerator.questData { name: string, [string]: questDataGenerator.stageData }
@@ -36,32 +36,26 @@ namespace Quest_Data_Builder.TES3.Serializer
 
 
 ---@class questDataGenerator.questTopicInfo
----@field id string
----@field index integer
+---@field id string quest id
+---@field index integer quest index
 
 ---@alias questDataGenerator.questByTopicText table<string, questDataGenerator.questTopicInfo[]>
 
---- 1 - object, 2 - owner, 3 - dialog, 4 - script, 5 - local variable
---- @alias questDataGenerator.questObjectType integer
-
 ---@class questDataGenerator.objectPosition
----@field type questDataGenerator.questObjectType|nil
----@field pos number[]
----@field name string|nil
----@field grid integer[]|nil
----@field id string|nil
-
----@alias questDataGenerator.questObjectPositions table<string, questDataGenerator.objectPosition[]>
+---@field pos number[] {x, y, z}
+---@field name string|nil cell id
+---@field grid integer[]|nil {gridX, gridY}
 
 ---@class questDataGenerator.objectInfo
----@field type questDataGenerator.questObjectType
----@field inWorld integer
----@field total integer
----@field starts string[]|nil
----@field stages questDataGenerator.questTopicInfo[]
+---@field type integer accuracy not guaranteed for <=3. 1 - object, 2 - owner, 3 - dialog, 4 - script, 5 - local variable
+---@field inWorld integer the number of this object in the game world
+---@field total integer the number of this object in the game world, including containers where it can be located
+---@field norm number the number of this object in the game world + conatiners multiplyed by the chance to get it
+---@field starts string[]|nil list of quest ids that this object can start
+---@field stages questDataGenerator.questTopicInfo[] quest stages in which this object appears
 ---@field positions questDataGenerator.objectPosition[]
----@field links string[]|nil
----@field contains string[]|nil
+---@field links {[1] : string, [2] : number}[]|nil objects that contain this object, with the quantity multiplied by the chance to get it
+---@field contains {[1] : string, [2] : number}[]|nil objects that this object contains, with the quantity multiplied by the chance to get it
 
 ---@class questDataGenerator.localVariableData
 ---@field type integer
