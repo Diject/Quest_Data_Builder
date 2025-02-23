@@ -7,10 +7,12 @@ using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Script;
 using Quest_Data_Builder.TES3.Variables;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -83,6 +85,7 @@ namespace Quest_Data_Builder.TES3
                 this.FindQuestObjectPositions();
                 this.FixQuestObjectData();
                 this.FindVariables();
+                this.findLinksToDialogs();
 
                 if (MainConfig.RemoveUnused)
                 {
@@ -581,6 +584,73 @@ namespace Quest_Data_Builder.TES3
 
         [GeneratedRegex("[\\\"]*([^\\\"]+)[\\\"]*[.](\\S+)")]
         private static partial Regex LocVariableRegex();
+
+
+        private void findLinksToDialogs()
+        {
+            QuestObjectById dialogueObjects = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var dialogRecord in dataHandler.Dialogs.Values)
+            {
+                foreach (var topic in dialogRecord.Topics)
+                {
+                    if (String.IsNullOrEmpty(topic.Result)) continue;
+                    if (topic.Actor is null) continue;
+
+                    var matches = AddTopicRegex().Matches(topic.Result);
+                    foreach (Match match in matches)
+                    {
+                        var dialogId = match.Groups[1].Value.Trim();
+
+                        var parent = dialogueObjects.Add(Consts.DialoguePrefix + dialogRecord.Id, QuestObjectType.Dialog);
+                        if (parent is null) break;
+
+                        var child = dialogueObjects.Add(Consts.DialoguePrefix + dialogId, QuestObjectType.Dialog);
+                        if (child is null) continue;
+
+                        var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
+                        if (owner is null) continue;
+
+                        parent.AddContainedObject(child);
+                        parent.AddLink(owner);
+                        child.AddLink(parent);
+                    }
+                }
+            }
+
+            void addDialogueToQuestObjectData(QuestObject obj, QuestHandler? quest, uint stage)
+            {
+                var qObj = quest is null ? this.QuestObjects.Add(obj.ObjectId, QuestObjectType.Dialog) :
+                    this.QuestObjects.Add(obj.ObjectId, quest, stage, QuestObjectType.Dialog);
+                if (qObj is null) return;
+
+                foreach (var linkId in obj.Links.Keys)
+                {
+                    if (!dialogueObjects.TryGetValue(linkId, out var dialogueObject)) continue;
+
+                    if (qObj.AddLink(linkId))
+                        addDialogueToQuestObjectData(dialogueObject, null, 0);
+                }
+
+                foreach (var linkId in obj.Contains.Keys)
+                {
+                    if (!dialogueObjects.TryGetValue(linkId, out var dialogueObject)) continue;
+
+                    if (qObj.AddContainedObjectId(linkId))
+                        addDialogueToQuestObjectData(dialogueObject, null, 0);
+                }
+            }
+
+            foreach(var diaQuestObjectItem in dialogueObjects)
+            {
+                if (!this.QuestObjects.TryGetValue(diaQuestObjectItem.Key, out var qObj)) continue;
+
+                addDialogueToQuestObjectData(diaQuestObjectItem.Value, null, 0);
+            }
+        }
+
+        [GeneratedRegex("addtopic \"?([^\"\\n\\r]+)\"?$", RegexOptions.IgnoreCase)]
+        private static partial Regex AddTopicRegex();
 
 
         private void RemoveUnused()
