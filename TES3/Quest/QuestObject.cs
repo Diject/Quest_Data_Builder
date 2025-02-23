@@ -110,17 +110,31 @@ namespace Quest_Data_Builder.TES3.Quest
             }
         }
 
-        public void AddContainedObjectId(string id)
+        public bool AddContainedObjectId(string id)
         {
-            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
-            Contains.TryAdd(id, new());
+            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return false;
+            return Contains.TryAdd(id, new());
         }
 
-        public void AddLink(string id)
+        public bool AddContainedObject(QuestObject qObject)
         {
-            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
-            Links.TryAdd(id, new());
+            if (String.Equals(qObject.ObjectId, ObjectId, StringComparison.OrdinalIgnoreCase)) return false;
+            return Contains.TryAdd(qObject.ObjectId, new());
         }
+
+
+        public bool AddLink(string id)
+        {
+            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return false;
+            return Links.TryAdd(id, new());
+        }
+
+        public bool AddLink(QuestObject qObject)
+        {
+            if (String.Equals(qObject.ObjectId, ObjectId, StringComparison.OrdinalIgnoreCase)) return false;
+            return Links.TryAdd(qObject.ObjectId, new());
+        }
+
 
         public void ChangeType(QuestObjectType type)
         {
