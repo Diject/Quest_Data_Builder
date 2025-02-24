@@ -85,7 +85,11 @@ namespace Quest_Data_Builder.TES3
                 this.FindQuestObjectPositions();
                 this.FixQuestObjectData();
                 this.FindVariables();
-                this.findLinksToDialogs();
+
+                if (MainConfig.FindLinksBetweenDialogues)
+                {
+                    this.findLinksToDialogs();
+                }
 
                 if (MainConfig.RemoveUnused)
                 {
@@ -588,40 +592,78 @@ namespace Quest_Data_Builder.TES3
 
         private void findLinksToDialogs()
         {
+            Dictionary<string, DialogRecord> questDialogueObjects = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var dialog in this.QuestObjects)
+            {
+                if (dialog.Value.Type == QuestObjectType.Dialog &&
+                    dataHandler.Dialogs.TryGetValue(dialog.Key.Substring(Consts.DialoguePrefix.Length), out var diaRecord))
+                {
+                    questDialogueObjects.Add(diaRecord.Id, diaRecord);
+                }
+            }
+
             QuestObjectById dialogueObjects = new(StringComparer.OrdinalIgnoreCase);
 
             foreach (var dialogRecord in dataHandler.Dialogs.Values)
             {
+                if (dialogRecord.Type != DialogType.RegularTopic && dialogRecord.Type != DialogType.Greeting) continue;
+
                 foreach (var topic in dialogRecord.Topics)
                 {
-                    if (String.IsNullOrEmpty(topic.Result)) continue;
                     if (topic.Actor is null) continue;
 
-                    var matches = AddTopicRegex().Matches(topic.Result);
-                    foreach (Match match in matches)
+                    if (!String.IsNullOrEmpty(topic.Result))
                     {
-                        var dialogId = match.Groups[1].Value.Trim();
+                        var matches = AddTopicRegex().Matches(topic.Result);
+                        foreach (Match match in matches)
+                        {
+                            var dialogId = match.Groups[1].Value.Trim();
 
-                        var parent = dialogueObjects.Add(Consts.DialoguePrefix + dialogRecord.Id, QuestObjectType.Dialog);
-                        if (parent is null) break;
+                            var parent = dialogueObjects.Add(Consts.DialoguePrefix + dialogRecord.Id, QuestObjectType.Dialog);
+                            if (parent is null) break;
 
-                        var child = dialogueObjects.Add(Consts.DialoguePrefix + dialogId, QuestObjectType.Dialog);
-                        if (child is null) continue;
+                            var child = dialogueObjects.Add(Consts.DialoguePrefix + dialogId, QuestObjectType.Dialog);
+                            if (child is null) continue;
 
-                        var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
-                        if (owner is null) continue;
+                            var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
+                            if (owner is null) continue;
 
-                        parent.AddContainedObject(child);
-                        parent.AddLink(owner);
-                        child.AddLink(parent);
+                            parent.AddContainedObject(child);
+                            parent.AddLink(owner);
+                            child.AddLink(parent);
+                        }
+                    }
+
+                    if (topic.Response is null) continue;
+
+                    foreach (var dia in questDialogueObjects)
+                    {
+                        if (topic.Response.Contains(dia.Key, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var parent = dialogueObjects.Add(Consts.DialoguePrefix + dialogRecord.Id, QuestObjectType.Dialog);
+                            if (parent is null) break;
+
+                            var child = dialogueObjects.Add(Consts.DialoguePrefix + dia.Key, QuestObjectType.Dialog);
+                            if (child is null) continue;
+
+                            var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
+                            if (owner is null) continue;
+
+                            parent.AddContainedObject(child);
+                            parent.AddLink(owner);
+                            child.AddLink(parent);
+                        }
                     }
                 }
             }
 
-            void addDialogueToQuestObjectData(QuestObject obj, QuestHandler? quest, uint stage)
+            void addDialogueToQuestObjectData(QuestObject obj, QuestHandler? quest, uint stage, int depth)
             {
-                var qObj = quest is null ? this.QuestObjects.Add(obj.ObjectId, QuestObjectType.Dialog) :
-                    this.QuestObjects.Add(obj.ObjectId, quest, stage, QuestObjectType.Dialog);
+                if (depth == 0) return;
+
+                var qObj = quest is null ? this.QuestObjects.Add(obj.ObjectId, obj.Type) :
+                    this.QuestObjects.Add(obj.ObjectId, quest, stage, obj.Type);
                 if (qObj is null) return;
 
                 foreach (var linkId in obj.Links.Keys)
@@ -629,7 +671,7 @@ namespace Quest_Data_Builder.TES3
                     if (!dialogueObjects.TryGetValue(linkId, out var dialogueObject)) continue;
 
                     if (qObj.AddLink(linkId))
-                        addDialogueToQuestObjectData(dialogueObject, null, 0);
+                        addDialogueToQuestObjectData(dialogueObject, null, 0, depth - 1);
                 }
 
                 foreach (var linkId in obj.Contains.Keys)
@@ -637,7 +679,7 @@ namespace Quest_Data_Builder.TES3
                     if (!dialogueObjects.TryGetValue(linkId, out var dialogueObject)) continue;
 
                     if (qObj.AddContainedObjectId(linkId))
-                        addDialogueToQuestObjectData(dialogueObject, null, 0);
+                        addDialogueToQuestObjectData(dialogueObject, null, 0, depth - 1);
                 }
             }
 
@@ -645,7 +687,7 @@ namespace Quest_Data_Builder.TES3
             {
                 if (!this.QuestObjects.TryGetValue(diaQuestObjectItem.Key, out var qObj)) continue;
 
-                addDialogueToQuestObjectData(diaQuestObjectItem.Value, null, 0);
+                addDialogueToQuestObjectData(diaQuestObjectItem.Value, null, 0, MainConfig.DialogueSearchDepth);
             }
         }
 
