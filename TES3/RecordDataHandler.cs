@@ -5,6 +5,7 @@ using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Variables;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,7 +20,7 @@ namespace Quest_Data_Builder.TES3
     {
         private readonly TES3DataFile master;
         public Dictionary<string, ScriptRecord> Scripts = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, DialogRecord> Dialogs = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, DialogRecord> Dialogs = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, ActorRecord> Actors = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, ContainerRecord> Containers = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, CellRecord> Cells = new(StringComparer.OrdinalIgnoreCase);
@@ -251,7 +252,7 @@ namespace Quest_Data_Builder.TES3
                 }
                 else
                 {
-                    this.Dialogs.Add(newDialogItem.Key, newDialogItem.Value);
+                    this.Dialogs.TryAdd(newDialogItem.Key, newDialogItem.Value);
                 }
             }
 
@@ -372,7 +373,7 @@ namespace Quest_Data_Builder.TES3
 
                 foreach (var key in deleted)
                 {
-                    this.Dialogs.Remove(key);
+                    this.Dialogs.Remove(key, out var _);
                 }
             }
 
