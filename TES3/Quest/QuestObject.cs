@@ -1,7 +1,10 @@
-﻿using Quest_Data_Builder.Logger;
+﻿using ConcurrentCollections;
+using Quest_Data_Builder.Extentions;
+using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
 using Quest_Data_Builder.TES3.Variables;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -33,27 +36,27 @@ namespace Quest_Data_Builder.TES3.Quest
         /// <summary>
         /// Quests in which this item is involved. (quest id, quest index)
         /// </summary>
-        public readonly List<(string, uint)> InvolvedQuestStages = new();
+        public readonly ConcurrentBag<(string, uint)> InvolvedQuestStages = new();
 
         /// <summary>
         /// Positions of the object in the world. Should be set manually
         /// </summary>
-        public readonly List<QuestObjectPosition> Positions = new();
+        public readonly ConcurrentBag<QuestObjectPosition> Positions = new();
 
         /// <summary>
         /// Quests that this object starts (probably)
         /// </summary>
-        public readonly HashSet<QuestHandler> Starts = new();
+        public readonly ConcurrentHashSet<QuestHandler> Starts = new();
 
         /// <summary>
         /// Ids of objects that this container owns
         /// </summary>
-        public readonly Dictionary<string, ItemCount> Contains = new(StringComparer.OrdinalIgnoreCase);
+        public readonly ConcurrentDictionary<string, ItemCount> Contains = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Ids of objects that owns this object. Not for script types
         /// </summary>
-        public readonly Dictionary<string, ItemCount> Links = new(StringComparer.OrdinalIgnoreCase);
+        public readonly ConcurrentDictionary<string, ItemCount> Links = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// The total number of the object in the game world. May not be accurate for objects from leveled lists
@@ -152,7 +155,7 @@ namespace Quest_Data_Builder.TES3.Quest
         }
     }
 
-    internal class QuestObjectById : Dictionary<string, QuestObject>
+    internal class QuestObjectById : ConcurrentDictionary<string, QuestObject>
     {
         public QuestObjectById(StringComparer comparer) : base(comparer)
         {
@@ -171,7 +174,7 @@ namespace Quest_Data_Builder.TES3.Quest
             else
             {
                 var newObj = new QuestObject(objectId, type);
-                base.Add(objectId, newObj);
+                base.TryAdd(objectId, newObj);
                 return newObj;
             }
         }
@@ -201,7 +204,7 @@ namespace Quest_Data_Builder.TES3.Quest
                     newObj.Starts.Add(quest);
                 }
 
-                base.Add(objectId, newObj);
+                base.TryAdd(objectId, newObj);
                 return newObj;
             }
         }
@@ -230,7 +233,7 @@ namespace Quest_Data_Builder.TES3.Quest
                 var newObj = new QuestObject(ownerId, objType, questObject.ObjectId);
                 newObj.InvolvedQuestStages.AddRange(questObject.InvolvedQuestStages);
                 newObj.AddContainedObjectId(questObject, carriedItem);
-                base.Add(ownerId, newObj);
+                base.TryAdd(ownerId, newObj);
                 return newObj;
             }
         }
