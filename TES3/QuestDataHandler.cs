@@ -99,6 +99,7 @@ namespace Quest_Data_Builder.TES3
             }
             catch (Exception ex)
             {
+                CustomLogger.RegisterErrorException(ex);
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
             }
                 

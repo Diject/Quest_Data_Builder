@@ -102,6 +102,7 @@ namespace Quest_Data_Builder
                     }
                     catch (Exception ex)
                     {
+                        CustomLogger.RegisterErrorException(ex);
                         CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
                         return;
                     }
@@ -140,6 +141,7 @@ namespace Quest_Data_Builder
                 }
                 catch (Exception ex)
                 {
+                    CustomLogger.RegisterErrorException(ex);
                     CustomLogger.WriteLine(LogLevel.Error, "Error: failed to process the file");
                     CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
                 }
@@ -151,14 +153,23 @@ namespace Quest_Data_Builder
                 return;
             }
 
-            for (int i = 1; i < recordData.Count; i++)
+            try
             {
-                var data = recordData[i];
+                for (int i = 1; i < recordData.Count; i++)
+                {
+                    var data = recordData[i];
 
-                recordData[0].Merge(data);
+                    recordData[0].Merge(data);
+                }
+                recordData[0].RemoveDeletedRecords();
+                recordData[0].AddItemsFromLeveledListsToObjects();
             }
-            recordData[0].RemoveDeletedRecords();
-            recordData[0].AddItemsFromLeveledListsToObjects();
+            catch (Exception ex)
+            {
+                CustomLogger.RegisterErrorException(ex);
+                CustomLogger.WriteLine(LogLevel.Error, "Error: failed to merge data");
+                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+            }
 
             var dataProcessor = new QuestDataHandler(recordData[0]);
 
@@ -188,7 +199,7 @@ namespace Quest_Data_Builder
             File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations, MainConfig.FileEncoding);
             File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "info.lua"]), "return " + (new GeneratedDataInfo(MainConfig.GameFiles).ToString()), MainConfig.FileEncoding);
 
-            CustomLogger.WriteLine(LogLevel.Text, "Successfully completed");
+            CustomLogger.WriteLine(LogLevel.Text, $"Completed with {CustomLogger.Errors.Count} errors");
         }
 
         public class Options
