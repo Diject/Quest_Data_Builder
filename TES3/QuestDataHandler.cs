@@ -1,4 +1,5 @@
-﻿using Quest_Data_Builder.Config;
+﻿using ConcurrentCollections;
+using Quest_Data_Builder.Config;
 using Quest_Data_Builder.Extentions;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
@@ -724,21 +725,46 @@ namespace Quest_Data_Builder.TES3
 
         private void RemoveUnused()
         {
-            HashSet<string> unused = new();
-            foreach (var qObjIt in this.QuestObjects)
+            bool checkQuestObject(QuestObject qObj, int depth)
+            {
+                if (depth == 0) return false;
+
+                if (qObj.InvolvedQuestStages.Count != 0) return true;
+                else
+                {
+                    bool ret = false;
+                    foreach (var objId in qObj.Contains.Keys)
+                    {
+                        if (this.QuestObjects.TryGetValue(objId, out var childObj))
+                        {
+                            ret |= checkQuestObject(childObj, depth - 1);
+                            if (ret) return ret;
+                        }
+                    }
+                    return ret;
+                }
+            }
+
+            ConcurrentHashSet<string> usedIds = new(StringComparer.OrdinalIgnoreCase);
+
+            Parallel.ForEach(this.QuestObjects, (qObjIt, state) =>
             {
                 var qObj = qObjIt.Value;
                 var qObjId = qObjIt.Key;
 
-                if ((qObj.Type == QuestObjectType.Object || qObj.Type == QuestObjectType.Owner) && qObj.InvolvedQuestStages.Count == 0)
+                if (qObj.InvolvedQuestStages.Count != 0 || checkQuestObject(qObj, 3))
                 {
-                    unused.Add(qObjId);
+                    usedIds.Add(qObjId);
                 }
-            }
+            });
 
-            foreach (var id in unused)
+            foreach (var qObjId in this.QuestObjects.Keys)
             {
-                this.QuestObjects.Remove(id, out var unusedObj);
+                if (!usedIds.Contains(qObjId))
+                {
+                    this.QuestObjects.Remove(qObjId, out var _);
+                    CustomLogger.WriteLine(LogLevel.Info, $"removed unused id: {qObjId}");
+                }
             }
         }
     }
