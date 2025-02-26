@@ -28,7 +28,7 @@ namespace Quest_Data_Builder.TES3
         /// <summary>
         /// Data about quest by its id
         /// </summary>
-        public Quests QuestData = new();
+        public Quests QuestData = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Objects involved to quests by id
@@ -415,45 +415,50 @@ namespace Quest_Data_Builder.TES3
             }
 
             // add objects from requirements
-            foreach (var questData in QuestData.Values)
-                foreach(var stage in questData.Stages.Values)
-                    foreach(var req in stage.Requirements.SelectMany(a => a))
-                    {
-                        if (req.Type == RequirementType.CustomDialogue)
+            Parallel.ForEach(QuestData.Values, (questData, state) =>
+            {
+                lock (questData)
+                {
+                    foreach (var stage in questData.Stages.Values)
+                        foreach (var req in stage.Requirements.SelectMany(a => a))
                         {
-                            this.QuestObjects.Add(req.Variable, questData, stage.Index, QuestObjectType.Dialog);
-                            continue;
-                        }
-
-                        this.QuestObjects.Add(req.Object, questData, stage.Index, null);
-
-                        var scriptObj = this.QuestObjects.Add(req.Script, questData, stage.Index, QuestObjectType.Script);
-
-                        if (req.Script is not null && this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
-                        {
-                            foreach (var id in ids)
+                            if (req.Type == RequirementType.CustomDialogue)
                             {
-                                scriptObj?.AddLink(id);
+                                this.QuestObjects.Add(req.Variable, questData, stage.Index, QuestObjectType.Dialog);
+                                continue;
                             }
-                        }
 
-                        if (req.ValueStr is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var valObj = this.QuestObjects.Add(req.ValueStr, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                            if (req.Script is not null)
-                                valObj?.AddLink(req.Script!);
-                            scriptObj?.AddContainedObjectId(req.ValueStr);
-                        }
+                            this.QuestObjects.Add(req.Object, questData, stage.Index, null);
 
-                        if (req.Variable is not null && !String.Equals(req.Variable, "player", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                            if (req.Script is not null)
-                                varObj?.AddLink(req.Script!);
-                            scriptObj?.AddContainedObjectId(req.Variable);
-                        }
+                            var scriptObj = this.QuestObjects.Add(req.Script, questData, stage.Index, QuestObjectType.Script);
 
-                    }
+                            if (req.Script is not null && this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
+                            {
+                                foreach (var id in ids)
+                                {
+                                    scriptObj?.AddLink(id);
+                                }
+                            }
+
+                            if (req.ValueStr is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var valObj = this.QuestObjects.Add(req.ValueStr, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
+                                if (req.Script is not null)
+                                    valObj?.AddLink(req.Script!);
+                                scriptObj?.AddContainedObjectId(req.ValueStr);
+                            }
+
+                            if (req.Variable is not null && !String.Equals(req.Variable, "player", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
+                                if (req.Script is not null)
+                                    varObj?.AddLink(req.Script!);
+                                scriptObj?.AddContainedObjectId(req.Variable);
+                            }
+
+                        }
+                }
+            });
             this.QuestObjects.Remove("player", out var plObj);
             this.QuestObjects.Remove("", out var emptyObj);
             this.QuestObjects.Remove("gold_001", out var goldObj);

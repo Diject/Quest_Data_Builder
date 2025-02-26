@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Variables
 {
-    internal class Inventory : Dictionary<string, ItemCount>
+    internal class Inventory : ConcurrentDictionary<string, ItemCount>
     {
 
         public Inventory() : base(StringComparer.OrdinalIgnoreCase)
@@ -17,11 +18,12 @@ namespace Quest_Data_Builder.TES3.Variables
 
         public void Add(string id, int count)
         {
-            if (!base.TryAdd(id, new(count)))
-            {
-                this[id].Count += count;
-                this[id].NormalizedCount += count;
-            }
+            lock (this)
+                if (!base.TryAdd(id, new(count)))
+                {
+                    this[id].Count += count;
+                    this[id].NormalizedCount += count;
+                }
         }
 
         public bool TryAdd(string id, int count)
@@ -32,20 +34,22 @@ namespace Quest_Data_Builder.TES3.Variables
 
         public void Add(string id, int count, double normalizedCount)
         {
-            if (!base.TryAdd(id, new(count, normalizedCount)))
-            {
-                this[id].Count += count;
-                this[id].NormalizedCount += normalizedCount;
-            }
+            lock (this)
+                if (!base.TryAdd(id, new(count, normalizedCount)))
+                {
+                    this[id].Count += count;
+                    this[id].NormalizedCount += normalizedCount;
+                }
         }
 
         public void Add(string id, double normalizedCount)
         {
-            if (!base.TryAdd(id, new((int)Math.Ceiling(normalizedCount), normalizedCount)))
-            {
-                this[id].Count += (int)Math.Ceiling(normalizedCount);
-                this[id].NormalizedCount += normalizedCount;
-            }
+            lock (this)
+                if (!base.TryAdd(id, new((int)Math.Ceiling(normalizedCount), normalizedCount)))
+                {
+                    this[id].Count += (int)Math.Ceiling(normalizedCount);
+                    this[id].NormalizedCount += normalizedCount;
+                }
         }
 
         public bool TryAdd(string id, double normalizedCount)

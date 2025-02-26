@@ -86,7 +86,7 @@ namespace Quest_Data_Builder.TES3.Records
             this.CarriedItems.Clear();
             foreach (var item in newRecord.CarriedItems)
             {
-                this.CarriedItems.Add(item.Key, item.Value);
+                this.CarriedItems.TryAdd(item.Key, item.Value);
             }
         }
     }

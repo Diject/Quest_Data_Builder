@@ -21,8 +21,8 @@ namespace Quest_Data_Builder.TES3
         private readonly TES3DataFile master;
         public Dictionary<string, ScriptRecord> Scripts = new(StringComparer.OrdinalIgnoreCase);
         public ConcurrentDictionary<string, DialogRecord> Dialogs = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, ActorRecord> Actors = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, ContainerRecord> Containers = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, ActorRecord> Actors = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, ContainerRecord> Containers = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, CellRecord> Cells = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, RecordWithScript> RecordsWithScript = new(StringComparer.OrdinalIgnoreCase);
         public LeveledItemHandler LeveledItems = new(StringComparer.OrdinalIgnoreCase);
@@ -124,30 +124,34 @@ namespace Quest_Data_Builder.TES3
 
         public void IterateItemsInActors(QuestObjectById objectsToFind, Action<string, ActorRecord, QuestObject, ItemCount> action)
         {
-            foreach (var actor in this.Actors.Values)
+            Parallel.ForEach(this.Actors.Values, (actor, state) =>
+            //foreach (var actor in this.Actors.Values)
             {
-                foreach (var itemInfo in actor.CarriedItems)
-                {
-                    if (objectsToFind.TryGetValue(itemInfo.Key, out var questObject))
+                lock (actor)
+                    foreach (var itemInfo in actor.CarriedItems)
                     {
-                        action(itemInfo.Key, actor, questObject, itemInfo.Value);
+                        if (objectsToFind.TryGetValue(itemInfo.Key, out var questObject))
+                        {
+                            action(itemInfo.Key, actor, questObject, itemInfo.Value);
+                        }
                     }
-                }
-            }
+            });
         }
 
         public void IterateItemsInContainers(QuestObjectById objectsToFind, Action<string, ContainerRecord, QuestObject, ItemCount> action)
         {
-            foreach (var container in this.Containers.Values)
+            Parallel.ForEach(this.Containers.Values, (container, state) =>
+            //foreach (var container in this.Containers.Values)
             {
-                foreach (var itemInfo in container.CarriedItems)
-                {
-                    if (objectsToFind.TryGetValue(itemInfo.Key, out var questObject))
+                lock (container)
+                    foreach (var itemInfo in container.CarriedItems)
                     {
-                        action(itemInfo.Key, container, questObject, itemInfo.Value);
+                        if (objectsToFind.TryGetValue(itemInfo.Key, out var questObject))
+                        {
+                            action(itemInfo.Key, container, questObject, itemInfo.Value);
+                        }
                     }
-                }
-            }
+            });
         }
 
         public void AddItemsFromLeveledListsToObjects()
@@ -228,7 +232,7 @@ namespace Quest_Data_Builder.TES3
                 }
                 else
                 {
-                    this.Actors.Add(newActorItem.Key, newActorItem.Value);
+                    this.Actors.TryAdd(newActorItem.Key, newActorItem.Value);
                 }
             }
 
@@ -240,7 +244,7 @@ namespace Quest_Data_Builder.TES3
                 }
                 else
                 {
-                    this.Containers.Add(newContainerItem.Key, newContainerItem.Value);
+                    this.Containers.TryAdd(newContainerItem.Key, newContainerItem.Value);
                 }
             }
 
@@ -332,7 +336,7 @@ namespace Quest_Data_Builder.TES3
 
                 foreach (var key in deleted)
                 {
-                    this.Actors.Remove(key);
+                    this.Actors.Remove(key, out var _);
                 }
             }
 

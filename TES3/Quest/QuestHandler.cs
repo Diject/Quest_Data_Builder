@@ -1,6 +1,7 @@
 ﻿using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Records;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,8 +48,10 @@ namespace Quest_Data_Builder.TES3.Quest
         }
     }
 
-    internal class Quests : Dictionary<string, QuestHandler>
+    internal class Quests : ConcurrentDictionary<string, QuestHandler>
     {
-
+        public Quests(IEqualityComparer<string>? comparer) : base(comparer)
+        {
+        }
     }
 }
