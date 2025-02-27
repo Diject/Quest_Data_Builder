@@ -30,16 +30,12 @@ namespace Quest_Data_Builder.TES3.Variables
 
         public static ItemCount operator +(ItemCount a, ItemCount b)
         {
-            a.Count += b.Count;
-            a.NormalizedCount += b.NormalizedCount;
-            return a;
+            return new(a.Count + b.Count, a.NormalizedCount + b.NormalizedCount);
         }
 
         public static ItemCount operator -(ItemCount a, ItemCount b)
         {
-            a.Count -= b.Count;
-            a.NormalizedCount -= b.NormalizedCount;
-            return a;
+            return new(a.Count - b.Count, a.NormalizedCount - b.NormalizedCount);
         }
     }
 }
