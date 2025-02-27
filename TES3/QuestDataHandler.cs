@@ -39,7 +39,7 @@ namespace Quest_Data_Builder.TES3
         /// <summary>
         /// List of elements that contains quest information. Low level. From dialogs and scripts. By quest id; by index
         /// </summary>
-        public Dictionary<string, SortedDictionary<uint, List<QuestContainingElement>>> QuestContainigElements = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, ConcurrentDictionary<uint, ConcurrentBag<QuestContainingElement>>> QuestContainigElements = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Object positions in the world. By cell id; by object id
@@ -109,21 +109,24 @@ namespace Quest_Data_Builder.TES3
 
         private void findQuestContainingElements()
         {
-            foreach (var dialogItem in dataHandler.Dialogs)
+            Parallel.ForEach(dataHandler.Dialogs.Values, (dialog, state) =>
             {
-                if (this.tryAddToElementsWithAttachedQuest(dialogItem.Value))
+                lock (dialog)
                 {
-                    CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the dialog record, {dialogItem.Value.Id}");
+                    if (this.tryAddToElementsWithAttachedQuest(dialog))
+                    {
+                        CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the dialog record, {dialog.Id}");
+                    }
                 }
-            }
+            });
 
-            foreach (var script in dataHandler.Scripts)
+            Parallel.ForEach(dataHandler.Scripts.Values, (script, state) =>
             {
-                if (this.tryAddToElementsWithAttachedQuest(script.Value))
+                if (this.tryAddToElementsWithAttachedQuest(script))
                 {
-                    CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the script record, {script.Value.Id}");
+                    CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the script record, {script.Id}");
                 }
-            }
+            });
         }
 
         [GeneratedRegex("Player[\" ]*->[ ]*AddItem[\", ]+([^\", ]+)[\", ]*([^\", ]*)", RegexOptions.IgnoreCase)]
@@ -698,37 +701,43 @@ namespace Quest_Data_Builder.TES3
             }
 
             // find items in dialogs that are added to the player by AddItem
-            foreach (var dialog in dataHandler.Dialogs.Values)
+            Parallel.ForEach(dataHandler.Dialogs.Values, (dialog, state) =>
             {
-                foreach (var topic in dialog.Topics)
+                lock (dialog)
                 {
-                    if (String.IsNullOrEmpty(topic.Result)) continue;
+                    foreach (var topic in dialog.Topics)
+                    {
+                        if (String.IsNullOrEmpty(topic.Result)) continue;
 
-                    var matches = AddItemRegex().Matches(topic.Result!);
+                        var matches = AddItemRegex().Matches(topic.Result!);
+                        foreach (Match match in matches)
+                        {
+                            var itemId = match.Groups[1].Value;
+                            var itemCountStr = match.Groups[2].Value;
+
+                            addObject(itemId, itemCountStr, Consts.DialoguePrefix + dialog.Id, QuestObjectType.Dialog);
+                        }
+                    }
+                }
+            });
+
+            // find items in scripts that are added to the player by AddItem
+            Parallel.ForEach(dataHandler.Scripts.Values, (script, state) =>
+            {
+                lock (script)
+                {
+                    if (String.IsNullOrEmpty(script.Text)) return;
+                    var matches = AddItemRegex().Matches(script.Text!);
+
                     foreach (Match match in matches)
                     {
                         var itemId = match.Groups[1].Value;
                         var itemCountStr = match.Groups[2].Value;
 
-                        addObject(itemId, itemCountStr, Consts.DialoguePrefix + dialog.Id, QuestObjectType.Dialog);
+                        addObject(itemId, itemCountStr, script.Id, QuestObjectType.Script);
                     }
                 }
-            }
-
-            // find items in scripts that are added to the player by AddItem
-            foreach (var script in dataHandler.Scripts)
-            {
-                if (String.IsNullOrEmpty(script.Value.Text)) continue;
-                var matches = AddItemRegex().Matches(script.Value.Text!);
-
-                foreach (Match match in matches)
-                {
-                    var itemId = match.Groups[1].Value;
-                    var itemCountStr = match.Groups[2].Value;
-
-                    addObject(itemId, itemCountStr, script.Value.Id, QuestObjectType.Script);
-                }
-            }
+            });
         }
 
 
