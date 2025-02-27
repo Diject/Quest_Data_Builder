@@ -190,7 +190,7 @@ namespace Quest_Data_Builder
 
 
             var jsonSer = new CustomSerializer(SerializerType.Json, dataProcessor);
-            jsonSer.MaximumObjectPositions = MainConfig.MaxObjectPositions;
+
             File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests.json"]), jsonSer.QuestData(), MainConfig.FileEncoding);
             File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText.json"]), jsonSer.QuestByTopicText(), MainConfig.FileEncoding);
             File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects.json"]), jsonSer.QuestObjects(), MainConfig.FileEncoding);

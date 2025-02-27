@@ -1,6 +1,7 @@
 ﻿using Luaon.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Quest_Data_Builder.Config;
 using Quest_Data_Builder.Extentions;
 using Quest_Data_Builder.TES3.Cell;
 using Quest_Data_Builder.TES3.Quest;
@@ -24,8 +25,6 @@ namespace Quest_Data_Builder.TES3.Serializer
     {
         private readonly SerializerType _type;
         private readonly QuestDataHandler dataHandler;
-
-        public int MaximumObjectPositions = 100; // only affects quest object data for now
 
         public CustomSerializer(SerializerType type, QuestDataHandler dataHandler)
         {
@@ -326,7 +325,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                     var objPosArray = newArray();
 
                     objPos.Shuffle();
-                    for (int i = 0; i < Math.Min(this.MaximumObjectPositions, objPos.Count); i++)
+                    for (int i = 0; i < Math.Min(MainConfig.MaxObjectPositions, objPos.Count); i++)
                     {
                         var pos = objPos[i];
 
