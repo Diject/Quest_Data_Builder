@@ -45,6 +45,8 @@ namespace Quest_Data_Builder.Config
 
         public static int DialogueSearchDepth = 1;
 
+        public static int RoundFractionalDigits = 3;
+
 
 
         public static bool LoadConfiguration(string filename)
@@ -108,6 +110,11 @@ namespace Quest_Data_Builder.Config
             if ((object)jsonData.dialogueSearchDepth is not null)
             {
                 DialogueSearchDepth = (int)jsonData.dialogueSearchDepth;
+            }
+
+            if ((object)jsonData.roundFractionalDigits is not null)
+            {
+                RoundFractionalDigits = (int)jsonData.roundFractionalDigits;
             }
 
             if ((object)jsonData.gameFiles is not null)

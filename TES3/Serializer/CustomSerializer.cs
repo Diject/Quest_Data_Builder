@@ -378,7 +378,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                     var containedArray = newArray();
 
                     var list = objectItem.Value.Contains.Select(a =>
-                        new Tuple<string, decimal, double>(a.Key, Math.Round((decimal)a.Value.NormalizedCount, 3), a.Value.NormalizedCount)).ToList();
+                        new Tuple<string, decimal, double>(a.Key, Math.Round((decimal)a.Value.NormalizedCount, MainConfig.RoundFractionalDigits), a.Value.NormalizedCount)).ToList();
                     foreach (var tuple in list.OrderByDescending(a => a.Item3 == 0 ? uint.MaxValue : a.Item2))
                     {
                         var arr = newArray();
@@ -395,7 +395,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                     var containedArray = newArray();
 
                     var list = objectItem.Value.Links.Select(a =>
-                        new Tuple<string, decimal, double>(a.Key, Math.Round((decimal)a.Value.NormalizedCount, 3), a.Value.NormalizedCount)).ToList();
+                        new Tuple<string, decimal, double>(a.Key, Math.Round((decimal)a.Value.NormalizedCount, MainConfig.RoundFractionalDigits), a.Value.NormalizedCount)).ToList();
                     foreach (var tuple in list.OrderByDescending(a => a.Item3 == 0 ? uint.MaxValue : a.Item2))
                     {
                         var arr = newArray();
