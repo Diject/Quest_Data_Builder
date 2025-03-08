@@ -566,6 +566,8 @@ namespace Quest_Data_Builder.TES3
 
         private void findLinksToDialogs()
         {
+            ConcurrentDictionary<string, ConcurrentHashSet<string>> actorsDialogues = new(StringComparer.OrdinalIgnoreCase);
+
             ConcurrentDictionary<string, DialogRecord> questDialogueObjects = new(StringComparer.OrdinalIgnoreCase);
 
             foreach (var dialog in this.QuestObjects)
@@ -588,6 +590,14 @@ namespace Quest_Data_Builder.TES3
                 {
                     if (topicRecord.Actor is null) continue;
                     dialogueData[diaRecord.Id].Add(topicRecord);
+
+                    if (!actorsDialogues.TryGetValue(topicRecord.Actor, out var actDialogues))
+                    {
+                        ConcurrentHashSet<string> diaSet = new(StringComparer.OrdinalIgnoreCase);
+                        actorsDialogues.TryAdd(topicRecord.Actor, diaSet);
+                        actDialogues = diaSet;
+                    }
+                    actDialogues.Add(diaRecord.Id);
                 }
             }
 
@@ -628,11 +638,14 @@ namespace Quest_Data_Builder.TES3
                             }
                         }
 
-                        if (topic.Response is null) state.Break();
+                        if (topic.Response is null || topic.Actor is null) state.Break();
 
-                        foreach (var dia in questDialogueObjects)
+                        actorsDialogues.TryGetValue(topic.Actor!, out var actorDialogueIds);
+                        if (actorDialogueIds is null) state.Break();
+
+                        foreach (var actorDiaId in actorDialogueIds!)
                         {
-                            if (topic.Response!.Contains(dia.Key, StringComparison.OrdinalIgnoreCase))
+                            if (topic.Response!.Contains(actorDiaId, StringComparison.OrdinalIgnoreCase))
                             {
                                 var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
                                 if (parentDia is null) break;
@@ -640,7 +653,7 @@ namespace Quest_Data_Builder.TES3
                                 var parentTopic = dialogueObjects.Add(topic.Id, QuestObjectType.Topic);
                                 if (parentTopic is null) break;
 
-                                var childDia = dialogueObjects.Add(Consts.DialoguePrefix + dia.Key, QuestObjectType.Dialog);
+                                var childDia = dialogueObjects.Add(Consts.DialoguePrefix + actorDiaId, QuestObjectType.Dialog);
                                 if (childDia is null) continue;
 
                                 var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
@@ -667,6 +680,8 @@ namespace Quest_Data_Builder.TES3
 
                 lock (qObj)
                 {
+                    if (MainConfig.OptimizeData && (obj.Links.Count + obj.Contains.Count > 40)) return;
+
                     foreach (var linkId in obj.Links.Keys)
                     {
                         if (dialogueObjects.TryGetValue(linkId, out var dialogueObject) && qObj.AddLink(linkId))
