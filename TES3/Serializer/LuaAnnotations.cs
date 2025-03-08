@@ -47,7 +47,7 @@ namespace Quest_Data_Builder.TES3.Serializer
 ---@field grid integer[]|nil {gridX, gridY}
 
 ---@class questDataGenerator.objectInfo
----@field type integer accuracy not guaranteed for <=3. 1 - object, 2 - owner, 3 - dialog, 4 - script, 5 - local variable
+---@field type integer accuracy not guaranteed for <=3. 1 - object, 2 - owner, 3 - dialog, 4 - script, 5 - local variable, 6 - dialogue topic
 ---@field inWorld integer the number of this object in the game world
 ---@field total integer the number of this object in the game world, including containers where it can be located
 ---@field norm number the number of this object in the game world + conatiners multiplyed by the chance to get it
