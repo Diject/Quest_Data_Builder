@@ -43,7 +43,7 @@ namespace Quest_Data_Builder.Config
 
         public static bool FindLinksBetweenDialogues = true;
 
-        public static int DialogueSearchDepth = 1;
+        public static int DialogueSearchDepth = 2;
 
         public static int RoundFractionalDigits = 3;
 

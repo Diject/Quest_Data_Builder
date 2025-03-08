@@ -20,6 +20,7 @@ namespace Quest_Data_Builder.TES3.Quest
         Dialog = 3,
         Script = 4,
         Local = 5,
+        Topic = 6,
     }
 
     internal class QuestObject

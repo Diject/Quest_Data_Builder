@@ -608,18 +608,23 @@ namespace Quest_Data_Builder.TES3
                             {
                                 var dialogId = match.Groups[1].Value.Trim();
 
-                                var parent = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
-                                if (parent is null) break;
+                                var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
+                                if (parentDia is null) break;
 
-                                var child = dialogueObjects.Add(Consts.DialoguePrefix + dialogId, QuestObjectType.Dialog);
-                                if (child is null) continue;
+                                var parentTopic = dialogueObjects.Add(topic.Id, QuestObjectType.Topic);
+                                if (parentTopic is null) break;
+
+                                var childDia = dialogueObjects.Add(Consts.DialoguePrefix + dialogId, QuestObjectType.Dialog);
+                                if (childDia is null) continue;
 
                                 var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
                                 if (owner is null) continue;
 
-                                parent.AddContainedObject(child);
-                                parent.AddLink(owner);
-                                child.AddLink(parent);
+                                parentDia.AddContainedObject(parentTopic);
+                                parentTopic.AddLink(owner);
+                                parentTopic.AddLink(parentDia);
+                                parentTopic.AddContainedObject(childDia);
+                                childDia.AddLink(parentTopic);
                             }
                         }
 
@@ -629,18 +634,23 @@ namespace Quest_Data_Builder.TES3
                         {
                             if (topic.Response!.Contains(dia.Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                var parent = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
-                                if (parent is null) break;
+                                var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
+                                if (parentDia is null) break;
 
-                                var child = dialogueObjects.Add(Consts.DialoguePrefix + dia.Key, QuestObjectType.Dialog);
-                                if (child is null) continue;
+                                var parentTopic = dialogueObjects.Add(topic.Id, QuestObjectType.Topic);
+                                if (parentTopic is null) break;
+
+                                var childDia = dialogueObjects.Add(Consts.DialoguePrefix + dia.Key, QuestObjectType.Dialog);
+                                if (childDia is null) continue;
 
                                 var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
                                 if (owner is null) continue;
 
-                                parent.AddContainedObject(child);
-                                parent.AddLink(owner);
-                                child.AddLink(parent);
+                                parentDia.AddContainedObject(parentTopic);
+                                parentTopic.AddLink(owner);
+                                parentTopic.AddLink(parentDia);
+                                parentTopic.AddContainedObject(childDia);
+                                childDia.AddLink(parentTopic);
                             }
                         }
                     }
@@ -664,7 +674,6 @@ namespace Quest_Data_Builder.TES3
                             addDialogueToQuestObjectData(dialogueObject, null, 0, depth - 1);
                         }
                     }
-
                     foreach (var linkId in obj.Contains.Keys)
                     {
                         if (dialogueObjects.TryGetValue(linkId, out var dialogueObject) && qObj.AddContainedObjectId(linkId))
