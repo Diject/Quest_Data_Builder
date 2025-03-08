@@ -19,7 +19,7 @@ namespace Quest_Data_Builder.TES3.Serializer
 ---@field attribute integer|nil attribute id
 ---@field script string|nil script id if this requrement from a script
 
----@alias questDataGenerator.requirementBlock questDataGenerator.requirementData[]
+---@alias questDataGenerator.requirementBlock questDataGenerator.requirementData[] list of requirements to complete a quest stage
 
 ---@class questDataGenerator.stageData
 ---@field id string dialogue id
