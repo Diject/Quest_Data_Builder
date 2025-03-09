@@ -220,10 +220,10 @@ namespace Quest_Data_Builder.TES3.Quest
             if (base.TryGetValue(ownerId, out var qObject))
             {
                 qObject.AddContainedObjectId(questObject, carriedItem);
-                foreach (var qStage in questObject.InvolvedQuestStages)
-                {
-                    qObject.AddStage(qStage.Item1, qStage.Item2);
-                }
+                //foreach (var qStage in questObject.InvolvedQuestStages)
+                //{
+                //    qObject.AddStage(qStage.Item1, qStage.Item2);
+                //}
 
                 qObject.ChangeType(objType);
 
@@ -232,7 +232,7 @@ namespace Quest_Data_Builder.TES3.Quest
             else
             {
                 var newObj = new QuestObject(ownerId, objType, questObject.ObjectId);
-                newObj.InvolvedQuestStages.AddRange(questObject.InvolvedQuestStages);
+                //newObj.InvolvedQuestStages.AddRange(questObject.InvolvedQuestStages);
                 newObj.AddContainedObjectId(questObject, carriedItem);
                 base.TryAdd(ownerId, newObj);
                 return newObj;
