@@ -191,13 +191,22 @@ namespace Quest_Data_Builder
 
             var jsonSer = new CustomSerializer(SerializerType.Json, dataProcessor);
 
-            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests.json"]), jsonSer.QuestData(), MainConfig.FileEncoding);
-            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText.json"]), jsonSer.QuestByTopicText(), MainConfig.FileEncoding);
-            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects.json"]), jsonSer.QuestObjects(), MainConfig.FileEncoding);
-            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables.json"]), jsonSer.LocalVariableDataByScriptId(), MainConfig.FileEncoding);
+            try
+            {
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests.json"]), jsonSer.QuestData(), MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText.json"]), jsonSer.QuestByTopicText(), MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects.json"]), jsonSer.QuestObjects(), MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables.json"]), jsonSer.LocalVariableDataByScriptId(), MainConfig.FileEncoding);
 
-            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations, MainConfig.FileEncoding);
-            File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "info.lua"]), "return " + (new GeneratedDataInfo(MainConfig.GameFiles).ToString()), MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations, MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "info.lua"]), "return " + (new GeneratedDataInfo(MainConfig.GameFiles).ToString()), MainConfig.FileEncoding);
+            }
+            catch (Exception ex)
+            {
+                CustomLogger.RegisterErrorException(ex);
+                CustomLogger.WriteLine(LogLevel.Error, "Error: failed to write data");
+                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+            }
 
             CustomLogger.WriteLine(LogLevel.Text, $"Completed with {CustomLogger.Errors.Count} errors");
         }
