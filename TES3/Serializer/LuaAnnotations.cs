@@ -54,8 +54,8 @@ namespace Quest_Data_Builder.TES3.Serializer
 ---@field starts string[]|nil list of quest ids that this object can start
 ---@field stages questDataGenerator.questTopicInfo[] quest stages in which this object appears
 ---@field positions questDataGenerator.objectPosition[]
----@field links {[1] : string, [2] : number}[]|nil objects that contain this object, with the quantity multiplied by the chance to get it
----@field contains {[1] : string, [2] : number}[]|nil objects that this object contains, with the quantity multiplied by the chance to get it
+---@field links {[1] : string, [2] : number}[]|nil objects that contain this object, with the chance to get it
+---@field contains {[1] : string, [2] : number}[]|nil objects that this object contains, with the chance to get it
 
 ---@class questDataGenerator.localVariableData
 ---@field type integer

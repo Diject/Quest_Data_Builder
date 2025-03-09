@@ -10,6 +10,7 @@ namespace Quest_Data_Builder.TES3.Variables
     {
         public int Count = 0;
         public double NormalizedCount = 0;
+        public double Chance = 1;
 
         public ItemCount()
         {
@@ -27,15 +28,22 @@ namespace Quest_Data_Builder.TES3.Variables
             this.NormalizedCount = Math.Abs(normalizedCount);
         }
 
+        public ItemCount(int count, double normalizedCount, double chance) : this()
+        {
+            this.Count = Math.Abs(count);
+            this.NormalizedCount = Math.Abs(normalizedCount);
+            this.Chance = chance;
+        }
+
 
         public static ItemCount operator +(ItemCount a, ItemCount b)
         {
-            return new(a.Count + b.Count, a.NormalizedCount + b.NormalizedCount);
+            return new(a.Count + b.Count, a.NormalizedCount + b.NormalizedCount, Math.Max(a.Chance, b.Chance));
         }
 
         public static ItemCount operator -(ItemCount a, ItemCount b)
         {
-            return new(a.Count - b.Count, a.NormalizedCount - b.NormalizedCount);
+            return new(a.Count - b.Count, a.NormalizedCount - b.NormalizedCount, a.Chance);
         }
     }
 }

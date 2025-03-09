@@ -172,12 +172,12 @@ namespace Quest_Data_Builder.TES3
                         if (levItem.CalculateForEach)
                         {
                             // probability of at least one success multiplied by number of items
-                            double chance = (1 - Math.Pow(1 - itemChance.Value, carriedItem.Value.Count)) * carriedItem.Value.Count;
-                            container.CarriedItems.Add(itemChance.Key, chance);
+                            double chance = (1 - Math.Pow(1 - itemChance.Value, carriedItem.Value.Count));
+                            container.CarriedItems.Add(itemChance.Key, chance * carriedItem.Value.Count, chance);
                         }
                         else
                         {
-                            container.CarriedItems.Add(itemChance.Key, itemChance.Value * carriedItem.Value.Count);
+                            container.CarriedItems.Add(itemChance.Key, itemChance.Value * carriedItem.Value.Count, itemChance.Value);
                         }
                     }
                 }
@@ -198,12 +198,12 @@ namespace Quest_Data_Builder.TES3
                         if (levItem.CalculateForEach)
                         {
                             // probability of at least one success multiplied by number of items
-                            double chance = (1 - Math.Pow(1 - itemChance.Value, carriedItem.Value.Count)) * carriedItem.Value.Count;
-                            container.CarriedItems.Add(itemChance.Key, chance);
+                            double chance = (1 - Math.Pow(1 - itemChance.Value, carriedItem.Value.Count));
+                            container.CarriedItems.Add(itemChance.Key, chance * carriedItem.Value.Count, chance);
                         }
                         else
                         {
-                            container.CarriedItems.Add(itemChance.Key, itemChance.Value * carriedItem.Value.Count);
+                            container.CarriedItems.Add(itemChance.Key, itemChance.Value * carriedItem.Value.Count, itemChance.Value);
                         }
                     }
                 }

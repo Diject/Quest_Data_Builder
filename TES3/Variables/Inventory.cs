@@ -52,6 +52,17 @@ namespace Quest_Data_Builder.TES3.Variables
                 }
         }
 
+        public void Add(string id, double normalizedCount, double chance)
+        {
+            lock (this)
+                if (!base.TryAdd(id, new((int)Math.Ceiling(normalizedCount), normalizedCount, chance)))
+                {
+                    this[id].Count += (int)Math.Ceiling(normalizedCount);
+                    this[id].NormalizedCount += normalizedCount;
+                    this[id].Chance = Math.Max(chance, this[id].Chance);
+                }
+        }
+
         public bool TryAdd(string id, double normalizedCount)
         {
             this.Add(id, normalizedCount);
