@@ -1,15 +1,20 @@
-﻿using Quest_Data_Builder.Config;
+﻿using ConcurrentCollections;
+using Quest_Data_Builder.Config;
 using Quest_Data_Builder.Extentions;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
 using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Script;
+using Quest_Data_Builder.TES3.Variables;
 using System;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -24,7 +29,7 @@ namespace Quest_Data_Builder.TES3
         /// <summary>
         /// Data about quest by its id
         /// </summary>
-        public Quests QuestData = new();
+        public Quests QuestData = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Objects involved to quests by id
@@ -34,7 +39,7 @@ namespace Quest_Data_Builder.TES3
         /// <summary>
         /// List of elements that contains quest information. Low level. From dialogs and scripts. By quest id; by index
         /// </summary>
-        public Dictionary<string, SortedDictionary<uint, List<QuestContainingElement>>> QuestContainigElements = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, ConcurrentDictionary<uint, ConcurrentBag<QuestContainingElement>>> QuestContainigElements = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Object positions in the world. By cell id; by object id
@@ -82,6 +87,12 @@ namespace Quest_Data_Builder.TES3
                 this.FindQuestObjectPositions();
                 this.FixQuestObjectData();
                 this.FindVariables();
+                this.FindRewardItems();
+
+                if (MainConfig.FindLinksBetweenDialogues)
+                {
+                    this.findLinksToDialogs();
+                }
 
                 if (MainConfig.RemoveUnused)
                 {
@@ -90,6 +101,7 @@ namespace Quest_Data_Builder.TES3
             }
             catch (Exception ex)
             {
+                CustomLogger.RegisterErrorException(ex);
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
             }
                 
@@ -97,52 +109,24 @@ namespace Quest_Data_Builder.TES3
 
         private void findQuestContainingElements()
         {
-            foreach (var dialogItem in dataHandler.Dialogs)
+            Parallel.ForEach(dataHandler.Dialogs.Values, (dialog, state) =>
             {
-                if (this.tryAddToElementsWithAttachedQuest(dialogItem.Value))
+                lock (dialog)
                 {
-                    CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the dialog record, {dialogItem.Value.Id}");
-                }
-
-                // find items in dialogs that are added to the player by AddItem
-                foreach (var topic in dialogItem.Value.Topics)
-                {
-                    if (String.IsNullOrEmpty(topic.Result)) continue;
-                    if (String.IsNullOrEmpty(topic.Actor)) continue;
-
-                    var matches = AddItemRegex().Matches(topic.Result!);
-                    foreach (Match match in matches)
+                    if (this.tryAddToElementsWithAttachedQuest(dialog))
                     {
-                        var itemId = match.Groups[1].Value;
-                        var qObject = this.QuestObjects.Add(itemId, QuestObjectType.Object);
-
-                        if (qObject is null) continue;
-
-                        var diaActorObject = this.QuestObjects.Add(topic.Actor, itemId, qObject, QuestObjectType.Owner);
+                        CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the dialog record, {dialog.Id}");
                     }
                 }
-            }
+            });
 
-            foreach (var script in dataHandler.Scripts)
+            Parallel.ForEach(dataHandler.Scripts.Values, (script, state) =>
             {
-                if (this.tryAddToElementsWithAttachedQuest(script.Value))
+                if (this.tryAddToElementsWithAttachedQuest(script))
                 {
-                    CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the script record, {script.Value.Id}");
+                    CustomLogger.WriteLine(LogLevel.Info, $"Found info about quest in the script record, {script.Id}");
                 }
-
-                // find items in scripts that are added to the player by AddItem
-                if (String.IsNullOrEmpty(script.Value.Text)) continue;
-                var matches = AddItemRegex().Matches(script.Value.Text!);
-                foreach (Match match in matches)
-                {
-                    var itemId = match.Groups[1].Value;
-                    var qObject = this.QuestObjects.Add(itemId, QuestObjectType.Object);
-
-                    if (qObject is null) continue;
-
-                    var scrObject = this.QuestObjects.Add(script.Value.Id, itemId, qObject, QuestObjectType.Script);
-                }
-            }
+            });
         }
 
         [GeneratedRegex("Player[\" ]*->[ ]*AddItem[\", ]+([^\", ]+)[\", ]*([^\", ]*)", RegexOptions.IgnoreCase)]
@@ -322,6 +306,7 @@ namespace Quest_Data_Builder.TES3
                     }
                 }
 
+                // Code to find next quest stages
                 for (int i = 0; i < quest.Stages.Count; i++)
                 {
                     var stage = quest.Stages.Values[i];
@@ -338,6 +323,7 @@ namespace Quest_Data_Builder.TES3
                             }
                         }
                     }
+
                     for (int j = i + 1; j < quest.Stages.Count; j++)
                     {
                         var stageToCompare = quest.Stages.Values[j];
@@ -345,6 +331,20 @@ namespace Quest_Data_Builder.TES3
                         if (stageToCompare.Requirements.IsContainsJornalIndexRequirement(quest.Id, stage.Index))
                         {
                             stage.AddNextStage(stageToCompare);
+                        }
+                    }
+
+                    if (stage.NextStages.Count == 0 && i + 1 < quest.Stages.Count &&
+                        quest.Stages.Values[i + 1].Requirements.Count == 0)
+                    {
+                        for (int j = i + 1; j < quest.Stages.Count; j++)
+                        {
+                            var stageToCompare = quest.Stages.Values[j];
+
+                            stage.AddNextStage(stageToCompare);
+
+                            if (stageToCompare.Requirements.Count != 0)
+                                break;
                         }
                     }
                 }
@@ -382,42 +382,54 @@ namespace Quest_Data_Builder.TES3
                 }
             }
 
-            foreach (var questData in QuestData.Values)
-                foreach(var stage in questData.Stages.Values)
-                    foreach(var req in stage.Requirements.SelectMany(a => a))
-                    {
-                        this.QuestObjects.Add(req.Object, questData, stage.Index, null);
-
-                        var scriptObj = this.QuestObjects.Add(req.Script, questData, stage.Index, QuestObjectType.Script);
-
-                        if (req.Script is not null && this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
+            // add objects from requirements
+            Parallel.ForEach(QuestData.Values, (questData, state) =>
+            {
+                lock (questData)
+                {
+                    foreach (var stage in questData.Stages.Values)
+                        foreach (var req in stage.Requirements.SelectMany(a => a))
                         {
-                            foreach (var id in ids)
+                            if (req.Type == RequirementType.CustomDialogue)
                             {
-                                scriptObj?.AddLink(id);
+                                this.QuestObjects.Add(req.Variable, questData, stage.Index, QuestObjectType.Dialog);
+                                continue;
                             }
-                        }
 
-                        if (req.ValueStr is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var valObj = this.QuestObjects.Add(req.ValueStr, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                            if (req.Script is not null)
-                                valObj?.AddLink(req.Script!);
-                            scriptObj?.AddContainedObjectId(req.ValueStr);
-                        }
+                            this.QuestObjects.Add(req.Object, questData, stage.Index, null);
 
-                        if (req.Variable is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
-                            if (req.Script is not null)
-                                varObj?.AddLink(req.Script!);
-                            scriptObj?.AddContainedObjectId(req.Variable);
-                        }
+                            var scriptObj = this.QuestObjects.Add(req.Script, questData, stage.Index, QuestObjectType.Script);
 
-                    }
-            this.QuestObjects.Remove("player");
-            this.QuestObjects.Remove("");
-            this.QuestObjects.Remove("gold_001");
+                            if (req.Script is not null && this.QuestObjectIDsWithScript.TryGetValue(req.Script!, out var ids))
+                            {
+                                foreach (var id in ids)
+                                {
+                                    scriptObj?.AddLink(id);
+                                }
+                            }
+
+                            if (req.ValueStr is not null && !String.Equals(req.ValueStr, "player", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var valObj = this.QuestObjects.Add(req.ValueStr, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
+                                if (req.Script is not null)
+                                    valObj?.AddLink(req.Script!);
+                                scriptObj?.AddContainedObjectId(req.ValueStr);
+                            }
+
+                            if (req.Variable is not null && !String.Equals(req.Variable, "player", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var varObj = this.QuestObjects.Add(req.Variable, questData, stage.Index, req.Type == RequirementType.CustomLocal ? QuestObjectType.Local : null);
+                                if (req.Script is not null)
+                                    varObj?.AddLink(req.Script!);
+                                scriptObj?.AddContainedObjectId(req.Variable);
+                            }
+
+                        }
+                }
+            });
+            this.QuestObjects.Remove("player", out var plObj);
+            this.QuestObjects.Remove("", out var emptyObj);
+            this.QuestObjects.Remove("gold_001", out var goldObj);
 
             foreach (var item in this.QuestObjectIDsWithScript)
             {
@@ -425,7 +437,7 @@ namespace Quest_Data_Builder.TES3
                 {
                     foreach (var objId in item.Value)
                     {
-                        var qObj = this.QuestObjects.Add(objId, item.Key, qObject, QuestObjectType.Owner);
+                        var qObj = this.QuestObjects.Add(objId, item.Key, qObject, QuestObjectType.Owner, null);
                         qObj!.AddContainedObjectId(item.Key);
                     }
                 }
@@ -435,14 +447,14 @@ namespace Quest_Data_Builder.TES3
             dataHandler.IterateItemsInContainers(this.QuestObjects, itemInContainersAction);
         }
 
-        private void itemInActorsAction(string itemId, ActorRecord actorRecord, QuestObject questObject, int itemCount)
+        private void itemInActorsAction(string itemId, ActorRecord actorRecord, QuestObject questObject, ItemCount carriedItem)
         {
-            this.QuestObjects.Add(actorRecord.Id, itemId, questObject, QuestObjectType.Owner);
+            this.QuestObjects.Add(actorRecord.Id, itemId, questObject, QuestObjectType.Owner, carriedItem);
         }
 
-        private void itemInContainersAction(string itemId, ContainerRecord containerRecord, QuestObject questObject, int itemCount)
+        private void itemInContainersAction(string itemId, ContainerRecord containerRecord, QuestObject questObject, ItemCount carriedItem)
         {
-            this.QuestObjects.Add(containerRecord.Id, itemId, questObject, QuestObjectType.Owner);
+            this.QuestObjects.Add(containerRecord.Id, itemId, questObject, QuestObjectType.Owner, carriedItem);
         }
 
         private void cellRefAction(CellRecord cell, CellReference reference, QuestObject questObject)
@@ -457,14 +469,6 @@ namespace Quest_Data_Builder.TES3
 
         public void FixQuestObjectData()
         {
-            foreach (var questKey in this.dataHandler.Dialogs.Keys)
-            {
-                if (this.QuestObjects.TryGetValue(questKey, out var dialogObject))
-                {
-                    dialogObject.Type = QuestObjectType.Dialog;
-                }
-            }
-
             foreach (var scriptId in this.dataHandler.Scripts.Keys)
             {
                 if (this.QuestObjects.TryGetValue(scriptId, out var qObj))
@@ -477,7 +481,7 @@ namespace Quest_Data_Builder.TES3
             foreach (var obj in this.QuestObjects.Values)
             {
                 obj.TotalCount = obj.Positions.Count;
-                foreach (var linkedObjId in obj.Links)
+                foreach (var linkedObjId in obj.Links.Keys)
                 {
                     if (!this.QuestObjects.TryGetValue(linkedObjId, out var linkedObj)) continue;
 
@@ -508,7 +512,7 @@ namespace Quest_Data_Builder.TES3
                         if (!this.QuestObjects.ContainsKey(scriptId)) continue;
 
                         this.VariablesByScriptId.TryAdd(scriptId, new(StringComparer.OrdinalIgnoreCase));
-                        this.VariablesByScriptId[scriptId].Add(variableName, variableList);
+                        this.VariablesByScriptId[scriptId].TryAdd(variableName, variableList);
                     }
                     else
                     {
@@ -560,23 +564,249 @@ namespace Quest_Data_Builder.TES3
         private static partial Regex LocVariableRegex();
 
 
+        private void findLinksToDialogs()
+        {
+            ConcurrentDictionary<string, ConcurrentHashSet<string>> actorsDialogues = new(StringComparer.OrdinalIgnoreCase);
+
+            ConcurrentDictionary<string, DialogRecord> questDialogueObjects = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var dialog in this.QuestObjects)
+            {
+                if (dialog.Value.Type == QuestObjectType.Dialog &&
+                    dataHandler.Dialogs.TryGetValue(dialog.Key.Substring(Consts.DialoguePrefix.Length), out var diaRecord))
+                {
+                    questDialogueObjects.TryAdd(diaRecord.Id, diaRecord);
+                }
+            }
+
+            ConcurrentDictionary<string, ConcurrentBag<TopicRecord>> dialogueData = new(StringComparer.OrdinalIgnoreCase);
+            foreach (var diaRecord in dataHandler.Dialogs.Values)
+            {
+                if (diaRecord.Type != DialogType.RegularTopic && diaRecord.Type != DialogType.Greeting) continue;
+
+                dialogueData.TryAdd(diaRecord.Id, new());
+
+                foreach (var topicRecord in diaRecord.Topics)
+                {
+                    if (topicRecord.Actor is null) continue;
+                    dialogueData[diaRecord.Id].Add(topicRecord);
+
+                    if (!actorsDialogues.TryGetValue(topicRecord.Actor, out var actDialogues))
+                    {
+                        ConcurrentHashSet<string> diaSet = new(StringComparer.OrdinalIgnoreCase);
+                        actorsDialogues.TryAdd(topicRecord.Actor, diaSet);
+                        actDialogues = diaSet;
+                    }
+                    actDialogues.Add(diaRecord.Id);
+                }
+            }
+
+            QuestObjectById dialogueObjects = new(StringComparer.OrdinalIgnoreCase);
+
+            Parallel.ForEach(dialogueData, (diaDataItem, state) =>
+            {
+                var diaId = diaDataItem.Key;
+
+                Parallel.ForEach(diaDataItem.Value, (topic, state) =>
+                {
+                    lock (topic)
+                    {
+                        if (!String.IsNullOrEmpty(topic.Result))
+                        {
+                            var matches = AddTopicRegex().Matches(topic.Result);
+                            foreach (Match match in matches)
+                            {
+                                var dialogId = match.Groups[1].Value.Trim();
+
+                                var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
+                                if (parentDia is null) break;
+
+                                var parentTopic = dialogueObjects.Add(topic.Id, QuestObjectType.Topic);
+                                if (parentTopic is null) break;
+
+                                var childDia = dialogueObjects.Add(Consts.DialoguePrefix + dialogId, QuestObjectType.Dialog);
+                                if (childDia is null) continue;
+
+                                var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
+                                if (owner is null) continue;
+
+                                parentDia.AddContainedObject(parentTopic);
+                                parentTopic.AddLink(owner);
+                                parentTopic.AddLink(parentDia);
+                                parentTopic.AddContainedObject(childDia);
+                                childDia.AddLink(parentTopic);
+                            }
+                        }
+
+                        if (topic.Response is null || topic.Actor is null) state.Break();
+
+                        actorsDialogues.TryGetValue(topic.Actor!, out var actorDialogueIds);
+                        if (actorDialogueIds is null) state.Break();
+
+                        foreach (var actorDiaId in actorDialogueIds!)
+                        {
+                            if (topic.Response!.Contains(actorDiaId, StringComparison.OrdinalIgnoreCase))
+                            {
+                                var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
+                                if (parentDia is null) break;
+
+                                var parentTopic = dialogueObjects.Add(topic.Id, QuestObjectType.Topic);
+                                if (parentTopic is null) break;
+
+                                var childDia = dialogueObjects.Add(Consts.DialoguePrefix + actorDiaId, QuestObjectType.Dialog);
+                                if (childDia is null) continue;
+
+                                var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
+                                if (owner is null) continue;
+
+                                parentDia.AddContainedObject(parentTopic);
+                                parentTopic.AddLink(owner);
+                                parentTopic.AddLink(parentDia);
+                                parentTopic.AddContainedObject(childDia);
+                                childDia.AddLink(parentTopic);
+                            }
+                        }
+                    }
+                });
+            });
+
+            void addDialogueToQuestObjectData(QuestObject obj, QuestHandler? quest, uint stage, int depth)
+            {
+                if (depth == 0) return;
+
+                var qObj = quest is null ? this.QuestObjects.Add(obj.ObjectId, obj.Type) :
+                    this.QuestObjects.Add(obj.ObjectId, quest, stage, obj.Type);
+                if (qObj is null) return;
+
+                lock (qObj)
+                {
+                    if (MainConfig.OptimizeData && (obj.Links.Count + obj.Contains.Count > 40)) return;
+
+                    foreach (var linkId in obj.Links.Keys)
+                    {
+                        if (dialogueObjects.TryGetValue(linkId, out var dialogueObject) && qObj.AddLink(linkId))
+                        {
+                            addDialogueToQuestObjectData(dialogueObject, null, 0, depth - 1);
+                        }
+                    }
+                    foreach (var linkId in obj.Contains.Keys)
+                    {
+                        if (dialogueObjects.TryGetValue(linkId, out var dialogueObject) && qObj.AddContainedObjectId(linkId))
+                        {
+                            addDialogueToQuestObjectData(dialogueObject, null, 0, depth - 1);
+                        }
+                    }
+                }
+            }
+
+            Parallel.ForEach(dialogueObjects, (diaQuestObjectItem, state) =>
+            {
+                if (this.QuestObjects.TryGetValue(diaQuestObjectItem.Key, out var qObj))
+                {
+                    lock (diaQuestObjectItem.Value)
+                        addDialogueToQuestObjectData(diaQuestObjectItem.Value, null, 0, MainConfig.DialogueSearchDepth);
+                }
+            });
+        }
+
+        [GeneratedRegex("addtopic \"?([^\"\\n\\r]+)\"?$", RegexOptions.IgnoreCase)]
+        private static partial Regex AddTopicRegex();
+
+
+        private void FindRewardItems()
+        {
+            void addObject(string itemId, string itemCountStr, string ownerId, QuestObjectType type)
+            {
+                if (!this.QuestObjects.TryGetValue(itemId, out var qObject)) return;
+
+                int.TryParse(itemCountStr, out var itemCount);
+
+                var diaActorObject = this.QuestObjects.Add(ownerId, itemId, qObject, type, new(itemCount, itemCount));
+            }
+
+            // find items in dialogs that are added to the player by AddItem
+            Parallel.ForEach(dataHandler.Dialogs.Values, (dialog, state) =>
+            {
+                lock (dialog)
+                {
+                    foreach (var topic in dialog.Topics)
+                    {
+                        if (String.IsNullOrEmpty(topic.Result)) continue;
+
+                        var matches = AddItemRegex().Matches(topic.Result!);
+                        foreach (Match match in matches)
+                        {
+                            var itemId = match.Groups[1].Value;
+                            var itemCountStr = match.Groups[2].Value;
+
+                            addObject(itemId, itemCountStr, Consts.DialoguePrefix + dialog.Id, QuestObjectType.Dialog);
+                        }
+                    }
+                }
+            });
+
+            // find items in scripts that are added to the player by AddItem
+            Parallel.ForEach(dataHandler.Scripts.Values, (script, state) =>
+            {
+                lock (script)
+                {
+                    if (String.IsNullOrEmpty(script.Text)) return;
+                    var matches = AddItemRegex().Matches(script.Text!);
+
+                    foreach (Match match in matches)
+                    {
+                        var itemId = match.Groups[1].Value;
+                        var itemCountStr = match.Groups[2].Value;
+
+                        addObject(itemId, itemCountStr, script.Id, QuestObjectType.Script);
+                    }
+                }
+            });
+        }
+
+
         private void RemoveUnused()
         {
-            HashSet<string> unused = new();
-            foreach (var qObjIt in this.QuestObjects)
+            bool checkQuestObject(QuestObject qObj, int depth)
+            {
+                if (depth == 0) return false;
+
+                if (qObj.InvolvedQuestStages.Count != 0) return true;
+                else
+                {
+                    bool ret = false;
+                    foreach (var objId in qObj.Contains.Keys)
+                    {
+                        if (this.QuestObjects.TryGetValue(objId, out var childObj))
+                        {
+                            ret |= checkQuestObject(childObj, depth - 1);
+                            if (ret) return ret;
+                        }
+                    }
+                    return ret;
+                }
+            }
+
+            ConcurrentHashSet<string> usedIds = new(StringComparer.OrdinalIgnoreCase);
+
+            Parallel.ForEach(this.QuestObjects, (qObjIt, state) =>
             {
                 var qObj = qObjIt.Value;
                 var qObjId = qObjIt.Key;
 
-                if ((qObj.Type == QuestObjectType.Object || qObj.Type == QuestObjectType.Owner) && qObj.InvolvedQuestStages.Count == 0)
+                if (qObj.InvolvedQuestStages.Count != 0 || checkQuestObject(qObj, 3))
                 {
-                    unused.Add(qObjId);
+                    usedIds.Add(qObjId);
                 }
-            }
+            });
 
-            foreach (var id in unused)
+            foreach (var qObjId in this.QuestObjects.Keys)
             {
-                this.QuestObjects.Remove(id);
+                if (!usedIds.Contains(qObjId))
+                {
+                    this.QuestObjects.Remove(qObjId, out var _);
+                    CustomLogger.WriteLine(LogLevel.Info, $"removed unused id: {qObjId}");
+                }
             }
         }
     }

@@ -1,11 +1,13 @@
 ﻿using Luaon.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Quest_Data_Builder.Config;
 using Quest_Data_Builder.Extentions;
 using Quest_Data_Builder.TES3.Cell;
 using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Script;
+using Quest_Data_Builder.TES3.Variables;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,8 +26,6 @@ namespace Quest_Data_Builder.TES3.Serializer
     {
         private readonly SerializerType _type;
         private readonly QuestDataHandler dataHandler;
-
-        public int MaximumObjectPositions = 100; // only affects quest object data for now
 
         public CustomSerializer(SerializerType type, QuestDataHandler dataHandler)
         {
@@ -326,7 +326,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                     var objPosArray = newArray();
 
                     objPos.Shuffle();
-                    for (int i = 0; i < Math.Min(this.MaximumObjectPositions, objPos.Count); i++)
+                    for (int i = 0; i < Math.Min(MainConfig.MaxObjectPositions, objPos.Count); i++)
                     {
                         var pos = objPos[i];
 
@@ -352,23 +352,45 @@ namespace Quest_Data_Builder.TES3.Serializer
                     }
 
                     objectTable.Add("inWorld", objPos.Count);
+
+                    double normalized = 0;
+                    foreach (var link in objectItem.Value.Links)
+                    {
+                        if (questObjects.TryGetValue(link.Key, out var obj))
+                        {
+                            normalized += link.Value.Chance * obj.TotalCount;
+                        }
+                    }
+
                     objectTable.Add("total", objectItem.Value.TotalCount);
+                    objectTable.Add("norm", Math.Round((decimal)(objPos.Count + normalized), 2));
 
                     objectTable.Add("positions", objPosArray);
                 }
                 else
                 {
                     objectTable.Add("inWorld", 0);
-                    objectTable.Add("total", objectItem.Value.TotalCount);
+
+                    double normalized = 0;
+                    foreach (var itemCount in objectItem.Value.Links.Values)
+                        normalized += itemCount.Count * itemCount.Chance;
+
+                    objectTable.Add("total", (int)Math.Round(objectItem.Value.TotalCount + normalized));
+                    objectTable.Add("norm", Math.Round((decimal)normalized, 2));
                 }
 
                 if (objectItem.Value.Contains.Count > 0)
                 {
                     var containedArray = newArray();
 
-                    foreach (var id in objectItem.Value.Contains)
+                    var list = objectItem.Value.Contains.Select(a =>
+                        new Tuple<string, decimal, double>(a.Key, Math.Round((decimal)a.Value.Chance, MainConfig.RoundFractionalDigits), a.Value.Chance)).ToList();
+                    foreach (var tuple in list.OrderByDescending(a => a.Item3 == 0 ? uint.MaxValue : a.Item2))
                     {
-                        containedArray.Add(id.ToLower());
+                        var arr = newArray();
+                        arr.Add(tuple.Item1.ToLower());
+                        arr.Add(tuple.Item2);
+                        containedArray.Add(arr);
                     }
 
                     objectTable.Add("contains", containedArray);
@@ -378,9 +400,14 @@ namespace Quest_Data_Builder.TES3.Serializer
                 {
                     var containedArray = newArray();
 
-                    foreach (var id in objectItem.Value.Links)
+                    var list = objectItem.Value.Links.Select(a =>
+                        new Tuple<string, decimal, double>(a.Key, Math.Round((decimal)a.Value.Chance, MainConfig.RoundFractionalDigits), a.Value.Chance)).ToList();
+                    foreach (var tuple in list.OrderByDescending(a => a.Item3 == 0 ? uint.MaxValue : a.Item2))
                     {
-                        containedArray.Add(id.ToLower());
+                        var arr = newArray();
+                        arr.Add(tuple.Item1.ToLower());
+                        arr.Add(tuple.Item2);
+                        containedArray.Add(arr);
                     }
 
                     objectTable.Add("links", containedArray);

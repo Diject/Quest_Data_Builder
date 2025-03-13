@@ -41,6 +41,14 @@ namespace Quest_Data_Builder.Config
 
         public static bool RemoveUnused = true;
 
+        public static bool OptimizeData = true;
+
+        public static bool FindLinksBetweenDialogues = true;
+
+        public static int DialogueSearchDepth = 2;
+
+        public static int RoundFractionalDigits = 3;
+
 
 
         public static bool LoadConfiguration(string filename)
@@ -94,6 +102,26 @@ namespace Quest_Data_Builder.Config
             if ((object)jsonData.removeUnused is not null)
             {
                 RemoveUnused = (bool)jsonData.removeUnused;
+            }
+
+            if ((object)jsonData.findDialogueLinks is not null)
+            {
+                FindLinksBetweenDialogues = (bool)jsonData.findDialogueLinks;
+            }
+
+            if ((object)jsonData.dialogueSearchDepth is not null)
+            {
+                DialogueSearchDepth = (int)jsonData.dialogueSearchDepth;
+            }
+
+            if ((object)jsonData.roundFractionalDigits is not null)
+            {
+                RoundFractionalDigits = (int)jsonData.roundFractionalDigits;
+            }
+
+            if ((object)jsonData.optimizeData is not null)
+            {
+                OptimizeData = (bool)jsonData.optimizeData;
             }
 
             if ((object)jsonData.gameFiles is not null)

@@ -1,8 +1,11 @@
 ﻿using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
+using Quest_Data_Builder.TES3.Handlers;
 using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
+using Quest_Data_Builder.TES3.Variables;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,12 +20,12 @@ namespace Quest_Data_Builder.TES3
     {
         private readonly TES3DataFile master;
         public Dictionary<string, ScriptRecord> Scripts = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, DialogRecord> Dialogs = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, ActorRecord> Actors = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, ContainerRecord> Containers = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, DialogRecord> Dialogs = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, ActorRecord> Actors = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, ContainerRecord> Containers = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, CellRecord> Cells = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, RecordWithScript> RecordsWithScript = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, LeveledItem> LeveledItems = new(StringComparer.OrdinalIgnoreCase);
+        public LeveledItemHandler LeveledItems = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, LeveledCreature> LeveledCreatures = new(StringComparer.OrdinalIgnoreCase);
 
         public RecordDataHandler(TES3DataFile master)
@@ -119,97 +122,88 @@ namespace Quest_Data_Builder.TES3
             }
         }
 
-        public void IterateItemsInActors(QuestObjectById objectsToFind, Action<string, ActorRecord, QuestObject, int> action)
+        public void IterateItemsInActors(QuestObjectById objectsToFind, Action<string, ActorRecord, QuestObject, ItemCount> action)
         {
-            foreach (var actor in this.Actors.Values)
+            Parallel.ForEach(this.Actors.Values, (actor, state) =>
+            //foreach (var actor in this.Actors.Values)
             {
-                foreach (var itemInfo in actor.CarriedItems)
-                {
-                    if (objectsToFind.TryGetValue(itemInfo.Key, out var questObject))
+                lock (actor)
+                    foreach (var itemInfo in actor.CarriedItems)
                     {
-                        action(itemInfo.Key, actor, questObject, itemInfo.Value);
-                    }
-                }
-            }
-        }
-
-        public void IterateItemsInContainers(QuestObjectById objectsToFind, Action<string, ContainerRecord, QuestObject, int> action)
-        {
-            foreach (var container in this.Containers.Values)
-            {
-                foreach (var itemInfo in container.CarriedItems)
-                {
-                    if (objectsToFind.TryGetValue(itemInfo.Key, out var questObject))
-                    {
-                        action(itemInfo.Key, container, questObject, itemInfo.Value);
-                    }
-                }
-            }
-        }
-
-        public HashSet<string>? GetItemIdsFromLeveledList(string id)
-        {
-            this.LeveledItems.TryGetValue(id, out var levItems);
-            if (levItems is not null)
-            {
-                HashSet<string> items = new();
-                foreach (var itemId in levItems.CarriedItems)
-                {
-                    if (this.LeveledItems.ContainsKey(itemId))
-                    {
-                        var nested = GetItemIdsFromLeveledList(itemId);
-                        if (nested is not null)
+                        if (objectsToFind.TryGetValue(itemInfo.Key, out var questObject))
                         {
-                            items.UnionWith(nested);
+                            action(itemInfo.Key, actor, questObject, itemInfo.Value);
                         }
                     }
-                    else
-                    {
-                        items.Add(itemId);
-                    }
-                }
-                return items;
-            }
+            });
+        }
 
-            return null;
+        public void IterateItemsInContainers(QuestObjectById objectsToFind, Action<string, ContainerRecord, QuestObject, ItemCount> action)
+        {
+            Parallel.ForEach(this.Containers.Values, (container, state) =>
+            //foreach (var container in this.Containers.Values)
+            {
+                lock (container)
+                    foreach (var itemInfo in container.CarriedItems)
+                    {
+                        if (objectsToFind.TryGetValue(itemInfo.Key, out var questObject))
+                        {
+                            action(itemInfo.Key, container, questObject, itemInfo.Value);
+                        }
+                    }
+            });
         }
 
         public void AddItemsFromLeveledListsToObjects()
         {
-            Dictionary<string, HashSet<string>> itemsByLevListId = new();
-
-            foreach (var levListId in this.LeveledItems.Keys)
-            {
-                var items = this.GetItemIdsFromLeveledList(levListId);
-                if (items is not null)
-                {
-                    itemsByLevListId.TryAdd(levListId, items);
-                }
-            }
-
+            // TODO unite with the next
             foreach (var container in this.Containers.Values)
             {
-                foreach (var carriedId in container.CarriedItems.Keys.ToList())
+                foreach (var carriedItem in container.CarriedItems.ToDictionary())
                 {
-                    if (itemsByLevListId.TryGetValue(carriedId, out var levItems))
+                    if (!this.LeveledItems.TryGetValue(carriedItem.Key, out var levItem)) continue;
+
+                    var itemChances = levItem.GetChances(20);
+
+                    if (itemChances is null) continue;
+
+                    foreach (var itemChance in itemChances)
                     {
-                        foreach (var itemId in levItems)
+                        if (levItem.CalculateForEach)
                         {
-                            container.CarriedItems.TryAdd(itemId, 1);
+                            // probability of at least one success multiplied by number of items
+                            double chance = (1 - Math.Pow(1 - itemChance.Value, carriedItem.Value.Count));
+                            container.CarriedItems.Add(itemChance.Key, chance * carriedItem.Value.Count, chance);
+                        }
+                        else
+                        {
+                            container.CarriedItems.Add(itemChance.Key, itemChance.Value * carriedItem.Value.Count, itemChance.Value);
                         }
                     }
                 }
             }
 
-            foreach (var actor in this.Actors.Values)
+            foreach (var container in this.Actors.Values)
             {
-                foreach (var carriedId in actor.CarriedItems.Keys.ToList())
+                foreach (var carriedItem in container.CarriedItems.ToDictionary())
                 {
-                    if (itemsByLevListId.TryGetValue(carriedId, out var levItems))
+                    if (!this.LeveledItems.TryGetValue(carriedItem.Key, out var levItem)) continue;
+
+                    var itemChances = levItem.GetChances(20);
+
+                    if (itemChances is null) continue;
+
+                    foreach (var itemChance in itemChances)
                     {
-                        foreach (var itemId in levItems)
+                        if (levItem.CalculateForEach)
                         {
-                            actor.CarriedItems.TryAdd(itemId, 1);
+                            // probability of at least one success multiplied by number of items
+                            double chance = (1 - Math.Pow(1 - itemChance.Value, carriedItem.Value.Count));
+                            container.CarriedItems.Add(itemChance.Key, chance * carriedItem.Value.Count, chance);
+                        }
+                        else
+                        {
+                            container.CarriedItems.Add(itemChance.Key, itemChance.Value * carriedItem.Value.Count, itemChance.Value);
                         }
                     }
                 }
@@ -238,7 +232,7 @@ namespace Quest_Data_Builder.TES3
                 }
                 else
                 {
-                    this.Actors.Add(newActorItem.Key, newActorItem.Value);
+                    this.Actors.TryAdd(newActorItem.Key, newActorItem.Value);
                 }
             }
 
@@ -250,7 +244,7 @@ namespace Quest_Data_Builder.TES3
                 }
                 else
                 {
-                    this.Containers.Add(newContainerItem.Key, newContainerItem.Value);
+                    this.Containers.TryAdd(newContainerItem.Key, newContainerItem.Value);
                 }
             }
 
@@ -262,7 +256,7 @@ namespace Quest_Data_Builder.TES3
                 }
                 else
                 {
-                    this.Dialogs.Add(newDialogItem.Key, newDialogItem.Value);
+                    this.Dialogs.TryAdd(newDialogItem.Key, newDialogItem.Value);
                 }
             }
 
@@ -342,7 +336,7 @@ namespace Quest_Data_Builder.TES3
 
                 foreach (var key in deleted)
                 {
-                    this.Actors.Remove(key);
+                    this.Actors.Remove(key, out var _);
                 }
             }
 
@@ -383,7 +377,7 @@ namespace Quest_Data_Builder.TES3
 
                 foreach (var key in deleted)
                 {
-                    this.Dialogs.Remove(key);
+                    this.Dialogs.Remove(key, out var _);
                 }
             }
 

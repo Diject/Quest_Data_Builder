@@ -9,9 +9,9 @@
     <StartupObject>Quest_Data_Builder.Program</StartupObject>
     <AssemblyName>Quest Data Builder</AssemblyName>
     <ApplicationIcon>qdb.ico</ApplicationIcon>
-    <FileVersion>1.0.8</FileVersion>
-    <AssemblyVersion>1.0.8</AssemblyVersion>
-    <Version>1.0.8</Version>
+    <FileVersion>1.1.0</FileVersion>
+    <AssemblyVersion>1.1.0</AssemblyVersion>
+    <Version>1.1.0</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
@@ -24,6 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
+    <PackageReference Include="ConcurrentHashSet" Version="1.3.0" />
     <PackageReference Include="CXuesong.Luaon" Version="0.2.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>

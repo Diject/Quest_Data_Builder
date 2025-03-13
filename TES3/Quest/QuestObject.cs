@@ -1,6 +1,10 @@
-﻿using Quest_Data_Builder.Logger;
+﻿using ConcurrentCollections;
+using Quest_Data_Builder.Extentions;
+using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
+using Quest_Data_Builder.TES3.Variables;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -16,6 +20,7 @@ namespace Quest_Data_Builder.TES3.Quest
         Dialog = 3,
         Script = 4,
         Local = 5,
+        Topic = 6,
     }
 
     internal class QuestObject
@@ -32,30 +37,30 @@ namespace Quest_Data_Builder.TES3.Quest
         /// <summary>
         /// Quests in which this item is involved. (quest id, quest index)
         /// </summary>
-        public readonly List<(string, uint)> InvolvedQuestStages = new();
+        public readonly ConcurrentBag<(string, uint)> InvolvedQuestStages = new();
 
         /// <summary>
         /// Positions of the object in the world. Should be set manually
         /// </summary>
-        public readonly List<QuestObjectPosition> Positions = new();
+        public readonly ConcurrentBag<QuestObjectPosition> Positions = new();
 
         /// <summary>
         /// Quests that this object starts (probably)
         /// </summary>
-        public readonly HashSet<QuestHandler> Starts = new();
+        public readonly ConcurrentHashSet<QuestHandler> Starts = new();
 
         /// <summary>
         /// Ids of objects that this container owns
         /// </summary>
-        public readonly HashSet<string> Contains = new(StringComparer.OrdinalIgnoreCase);
+        public readonly ConcurrentDictionary<string, ItemCount> Contains = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Ids of objects that owns this object. Not for script types
         /// </summary>
-        public readonly HashSet<string> Links = new(StringComparer.OrdinalIgnoreCase);
+        public readonly ConcurrentDictionary<string, ItemCount> Links = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// The total number of the object in the game world. Included positions from leveled lists. Should be set manually
+        /// The total number of the object in the game world. May not be accurate for objects from leveled lists
         /// </summary>
         public int TotalCount = 0;
 
@@ -92,24 +97,48 @@ namespace Quest_Data_Builder.TES3.Quest
             Positions.Add(position);
         }
 
-        public void AddContainedObjectId(QuestObject qObject)
+        public void AddContainedObjectId(QuestObject qObject, ItemCount? itemCount)
         {
             if (String.Equals(qObject.ObjectId, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
-            Contains.Add(qObject.ObjectId);
-            qObject.Links.Add(this.ObjectId);
+
+            itemCount ??= new();
+
+            if (!Contains.TryAdd(qObject.ObjectId, itemCount))
+            {
+                Contains[qObject.ObjectId] += itemCount;
+            }
+
+            if (!qObject.Links.TryAdd(this.ObjectId, itemCount))
+            {
+                qObject.Links[this.ObjectId] += itemCount;
+            }
         }
 
-        public void AddContainedObjectId(string id)
+        public bool AddContainedObjectId(string id)
         {
-            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
-            Contains.Add(id);
+            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return false;
+            return Contains.TryAdd(id, new());
         }
 
-        public void AddLink(string id)
+        public bool AddContainedObject(QuestObject qObject)
         {
-            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return;
-            Links.Add(id);
+            if (String.Equals(qObject.ObjectId, ObjectId, StringComparison.OrdinalIgnoreCase)) return false;
+            return Contains.TryAdd(qObject.ObjectId, new());
         }
+
+
+        public bool AddLink(string id)
+        {
+            if (String.Equals(id, ObjectId, StringComparison.OrdinalIgnoreCase)) return false;
+            return Links.TryAdd(id, new());
+        }
+
+        public bool AddLink(QuestObject qObject)
+        {
+            if (String.Equals(qObject.ObjectId, ObjectId, StringComparison.OrdinalIgnoreCase)) return false;
+            return Links.TryAdd(qObject.ObjectId, new());
+        }
+
 
         public void ChangeType(QuestObjectType type)
         {
@@ -127,7 +156,7 @@ namespace Quest_Data_Builder.TES3.Quest
         }
     }
 
-    internal class QuestObjectById : Dictionary<string, QuestObject>
+    internal class QuestObjectById : ConcurrentDictionary<string, QuestObject>
     {
         public QuestObjectById(StringComparer comparer) : base(comparer)
         {
@@ -146,7 +175,7 @@ namespace Quest_Data_Builder.TES3.Quest
             else
             {
                 var newObj = new QuestObject(objectId, type);
-                base.Add(objectId, newObj);
+                base.TryAdd(objectId, newObj);
                 return newObj;
             }
         }
@@ -176,7 +205,7 @@ namespace Quest_Data_Builder.TES3.Quest
                     newObj.Starts.Add(quest);
                 }
 
-                base.Add(objectId, newObj);
+                base.TryAdd(objectId, newObj);
                 return newObj;
             }
         }
@@ -184,17 +213,17 @@ namespace Quest_Data_Builder.TES3.Quest
         /// <summary>
         /// For objects that owns a quest object. For "Owner", "ScriptData" and "Dialog" types. Returns container object
         /// </summary>
-        public QuestObject? Add(string? ownerId, string? objectId, QuestObject questObject, QuestObjectType objType)
+        public QuestObject? Add(string? ownerId, string? objectId, QuestObject questObject, QuestObjectType objType, ItemCount? carriedItem)
         {
             if (ownerId is null || objectId is null) return null;
 
             if (base.TryGetValue(ownerId, out var qObject))
             {
-                qObject.AddContainedObjectId(questObject);
-                foreach (var qStage in questObject.InvolvedQuestStages)
-                {
-                    qObject.AddStage(qStage.Item1, qStage.Item2);
-                }
+                qObject.AddContainedObjectId(questObject, carriedItem);
+                //foreach (var qStage in questObject.InvolvedQuestStages)
+                //{
+                //    qObject.AddStage(qStage.Item1, qStage.Item2);
+                //}
 
                 qObject.ChangeType(objType);
 
@@ -203,9 +232,9 @@ namespace Quest_Data_Builder.TES3.Quest
             else
             {
                 var newObj = new QuestObject(ownerId, objType, questObject.ObjectId);
-                newObj.InvolvedQuestStages.AddRange(questObject.InvolvedQuestStages);
-                newObj.AddContainedObjectId(questObject);
-                base.Add(ownerId, newObj);
+                //newObj.InvolvedQuestStages.AddRange(questObject.InvolvedQuestStages);
+                newObj.AddContainedObjectId(questObject, carriedItem);
+                base.TryAdd(ownerId, newObj);
                 return newObj;
             }
         }
