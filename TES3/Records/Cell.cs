@@ -106,7 +106,10 @@ namespace Quest_Data_Builder.TES3.Records
                             }
                         case "FRMR":
                             {
-                                var reference = new CellReference(reader.ReadUInt32());
+                                // It looks like objects that overwrite cell reference have 32 bits id,
+                                // but only the first 24 bits are checked to overwrite it
+                                var id = reader.ReadUInt32() & 0xffffff; 
+                                var reference = new CellReference(id);
                                 this.References.Add(reference);
                                 break;
                             }
