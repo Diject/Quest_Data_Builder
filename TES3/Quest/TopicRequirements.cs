@@ -19,10 +19,6 @@ namespace Quest_Data_Builder.TES3.Quest
                 var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.CustomActor;
                 requirement.Object = topic.Actor;
-                if (topic.Parent is not null)
-                {
-                    requirement.Variable = Consts.DialoguePrefix + topic.Parent.Id;
-                }
                 this.Add(requirement);
             }
 

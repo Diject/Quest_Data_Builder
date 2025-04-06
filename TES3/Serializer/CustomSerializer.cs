@@ -132,13 +132,21 @@ namespace Quest_Data_Builder.TES3.Serializer
                 subTable.Add("type", requirement.Type);
                 subTable.Add("operator", (int)requirement.Operator);
 
-                if (requirement.Value is not null)
-                    subTable.Add("value", requirement.Value);
-                else if (requirement.ValueStr is not null)
-                    subTable.Add("value", requirement.ValueStr.ToLower());
+                if (requirement.Type == RequirementType.CustomActor && requirement.Dialogue is not null)
+                {
+                    subTable.Add("value", requirement.Dialogue.Value.TopicId);
+                    subTable.Add("variable", requirement.Dialogue.Value.Id);
+                }
+                else
+                {
+                    if (requirement.Value is not null)
+                        subTable.Add("value", requirement.Value);
+                    else if (requirement.ValueStr is not null)
+                        subTable.Add("value", requirement.ValueStr.ToLower());
 
-                if (requirement.Variable is not null)
-                    subTable.Add("variable", requirement.Variable.ToLower());
+                    if (requirement.Variable is not null)
+                        subTable.Add("variable", requirement.Variable.ToLower());
+                }
 
                 if (requirement.Object is not null)
                     subTable.Add("object", requirement.Object.ToLower());
