@@ -134,8 +134,8 @@ namespace Quest_Data_Builder.TES3.Serializer
 
                 if (requirement.Type == RequirementType.CustomActor && requirement.Dialogue is not null)
                 {
-                    subTable.Add("value", requirement.Dialogue.Value.TopicId);
-                    subTable.Add("variable", requirement.Dialogue.Value.Id);
+                    subTable.Add("value", requirement.Dialogue.Value.TopicId.ToLower());
+                    subTable.Add("variable", Consts.DialoguePrefix + requirement.Dialogue.Value.Id.ToLower());
                 }
                 else
                 {
