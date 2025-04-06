@@ -30,7 +30,7 @@ namespace Quest_Data_Builder.TES3.Serializer
 ---@field restart boolean|nil restart flag
 
 
----@alias questDataGenerator.questData { name: string, [string]: questDataGenerator.stageData }
+---@alias questDataGenerator.questData { name: string, links: string[]?, [string]: questDataGenerator.stageData }
 
 ---@alias questDataGenerator.quests table<string, questDataGenerator.questData>
 

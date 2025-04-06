@@ -173,6 +173,20 @@ namespace Quest_Data_Builder.TES3.Serializer
         public string QuestData()
         {
             var data = dataHandler.QuestData;
+
+            Dictionary<string, List<QuestHandler>> questByName = new(StringComparer.OrdinalIgnoreCase);
+            foreach (var q in data.Values)
+            {
+                if (q.Name is null) continue;
+                if (!questByName.TryGetValue(q.Name, out var list))
+                {
+                    list = new List<QuestHandler>();
+                    questByName[q.Name] = list;
+                }
+
+                list.Add(q);
+            }
+
             var table = newTable();
 
             foreach (var questItem in data)
@@ -182,6 +196,20 @@ namespace Quest_Data_Builder.TES3.Serializer
                 if (questItem.Value.Name is not null)
                 {
                     questTable.Add("name", questItem.Value.Name);
+                }
+
+                if (questItem.Value.Name is not null && questByName.TryGetValue(questItem.Value.Name, out var linked) &&
+                    linked.Count > 1)
+                {
+                    var linkedArr = newArray();
+                    foreach (var q in linked)
+                    {
+                        if (q.Id != questItem.Value.Id)
+                        {
+                            linkedArr.Add(q.Id.ToLower());
+                        }
+                    }
+                    questTable.Add("links", linkedArr);
                 }
 
                 var stages = questItem.Value.Stages;
