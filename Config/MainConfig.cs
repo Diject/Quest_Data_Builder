@@ -49,6 +49,11 @@ namespace Quest_Data_Builder.Config
 
         public static int RoundFractionalDigits = 3;
 
+        /// <summary>
+        /// Number of steps in a quest to be considered a quest that an object can start(give)
+        /// </summary>
+        public static int StagesNumToAddQuestInfo = 1;
+
 
 
         public static bool LoadConfiguration(string filename)
@@ -122,6 +127,11 @@ namespace Quest_Data_Builder.Config
             if ((object)jsonData.optimizeData is not null)
             {
                 OptimizeData = (bool)jsonData.optimizeData;
+            }
+
+            if ((object)jsonData.stagesNumToAddQuestInfo is not null)
+            {
+                StagesNumToAddQuestInfo = (int)jsonData.stagesNumToAddQuestInfo;
             }
 
             if ((object)jsonData.gameFiles is not null)

@@ -66,10 +66,6 @@ namespace Quest_Data_Builder.TES3
         /// </summary>
         public Dictionary<string, ScriptVariableList> GlobalVariables = new(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>
-        /// Number of steps in a quest to be considered a quest that an object can start(give)
-        /// </summary>
-        private const int numberOfStagesToBecomeQuest = 2;
 
 
 
@@ -349,7 +345,7 @@ namespace Quest_Data_Builder.TES3
                     }
                 }
 
-                if (quest.Stages.Count >= numberOfStagesToBecomeQuest)
+                if (quest.Stages.Count >= MainConfig.StagesNumToAddQuestInfo)
                 {
                     var stage = quest.Stages.Values[0];
                     var involvedIds = stage.Requirements.GetInvolvedObjectIds();
