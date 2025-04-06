@@ -16,12 +16,11 @@ namespace Quest_Data_Builder.TES3.Quest
         {
             if (topic.Actor is not null)
             {
-                var requirement = new QuestRequirement();
+                var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.CustomActor;
                 requirement.Object = topic.Actor;
                 if (topic.Parent is not null)
                 {
-                    requirement.Dialogue = topic.Parent.Id;
                     requirement.Variable = Consts.DialoguePrefix + topic.Parent.Id;
                 }
                 this.Add(requirement);
@@ -29,94 +28,78 @@ namespace Quest_Data_Builder.TES3.Quest
 
             if (topic.Cell is not null)
             {
-                var requirement = new QuestRequirement();
+                var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.CustomActorCell;
                 requirement.ValueStr = topic.Cell;
                 requirement.Object = topic.Actor;
-                if (topic.Parent is not null)
-                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
             if (topic.Class is not null)
             {
-                var requirement = new QuestRequirement();
+                var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.CustomActorClass;
                 requirement.ValueStr = topic.Class;
                 requirement.Object = topic.Actor;
-                if (topic.Parent is not null)
-                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
             if (topic.Gender is not null && (int)topic.Gender != -1)
             {
-                var requirement = new QuestRequirement();
+                var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.CustomActorGender;
                 requirement.Value = (int)topic.Gender;
                 requirement.Object = topic.Actor;
-                if (topic.Parent is not null)
-                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
             if (topic.Faction is not null)
             {
-                var requirement = new QuestRequirement();
+                var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.CustomActorFaction;
                 requirement.ValueStr = topic.Faction;
                 requirement.Object = topic.Actor;
-                if (topic.Parent is not null)
-                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
             if (topic.Rank != -1)
             {
-                var requirement = new QuestRequirement();
+                var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.RankRequirement;
                 requirement.Operator = SCVROperator.GreaterOrEqual;
                 requirement.Value = topic.Rank;
                 requirement.Variable = topic.Faction;
                 requirement.Object = topic.Actor;
-                if (topic.Parent is not null)
-                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
             if (topic.Disposition != 0)
             {
-                var requirement = new QuestRequirement();
+                var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.CustomDisposition;
                 requirement.Operator = SCVROperator.GreaterOrEqual;
                 requirement.Object = topic.Actor;
                 requirement.Value = topic.Disposition;
-                if (topic.Parent is not null)
-                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
             if (topic.PCFaction is not null)
             {
-                var requirement = new QuestRequirement();
+                var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.CustomPCFaction;
                 requirement.ValueStr = topic.PCFaction;
                 requirement.MakeAsPlayerRequirement();
-                if (topic.Parent is not null)
-                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
             if (topic.PCRank != -1)
             {
-                var requirement = new QuestRequirement();
+                var requirement = new QuestRequirement(topic);
                 requirement.Type = RequirementType.CustomPCRank;
                 requirement.Operator = SCVROperator.GreaterOrEqual;
                 requirement.Value = topic.PCRank;
                 requirement.Variable = topic.PCFaction;
                 requirement.MakeAsPlayerRequirement();
-                if (topic.Parent is not null)
-                    requirement.Dialogue = topic.Parent.Id;
                 this.Add(requirement);
             }
 
@@ -128,7 +111,7 @@ namespace Quest_Data_Builder.TES3.Quest
                     requirement.Object = topic.Actor;
                 }
                 if (topic.Parent is not null)
-                    requirement.Dialogue = topic.Parent.Id;
+                    requirement.Dialogue = (topic.Parent.Id, topic.Id);
                 this.Add(requirement);
             }
 

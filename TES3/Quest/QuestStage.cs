@@ -47,7 +47,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 {
                     var newRequirement = new QuestRequirement();
                     newRequirement.Type = RequirementType.CustomDialogue;
-                    newRequirement.Variable = Consts.DialoguePrefix + requirement.Dialogue;
+                    newRequirement.Variable = Consts.DialoguePrefix + requirement.Dialogue.Value.Id;
+                    newRequirement.ValueStr = requirement.Dialogue.Value.TopicId;
 
                     block.Add(newRequirement);
                     hasAddedDialRequirement = true;
