@@ -134,7 +134,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 }
 
                 // search for requirements from "Choice" command owner if this topic have "PreviousDialogChoice" requirement
-                if (topic.Variables.Exists(a => a.DetailsValue == RequirementType.PreviousDialogChoice))
+                var topicVar = topic.Variables.Find(a => a.DetailsValue == RequirementType.PreviousDialogChoice);
+                if (topicVar is not null)
                 {
                     for (int i = topic.Parent.Topics.IndexOf(topic) + 1; i < topic.Parent.Topics.Count; i++)
                     {
@@ -142,14 +143,18 @@ namespace Quest_Data_Builder.TES3.Quest
 
                         if (!next.Variables.Exists(a => a.DetailsValue == RequirementType.PreviousDialogChoice) &&
                             next.Result is not null &&
-                            ChoiceRegex().Match(next.Result) is not null)
+                            ChoiceRegex().Match(next.Result).Success)
                         {
-                            foreach (var req in next.Variables)
+                            var matches = ChoiceArgumentsRegex().Matches(next.Result);
+                            if (matches.Any(a => int.Parse(a.Groups[2].Value) == topicVar.IntValue))
                             {
-                                var requirement = new QuestRequirement(req);
-                                this.Add(requirement);
+                                foreach (var req in next.Variables)
+                                {
+                                    var requirement = new QuestRequirement(req);
+                                    this.Add(requirement);
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }
@@ -159,5 +164,7 @@ namespace Quest_Data_Builder.TES3.Quest
 
         [GeneratedRegex(@"choice .+?\d+", RegexOptions.IgnoreCase)]
         private static partial Regex ChoiceRegex();
+        [GeneratedRegex("(\\\".+?\\\" (\\d+))+", RegexOptions.IgnoreCase)]
+        private static partial Regex ChoiceArgumentsRegex();
     }
 }
