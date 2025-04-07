@@ -212,6 +212,11 @@ namespace Quest_Data_Builder.TES3.Serializer
                     questTable.Add("links", linkedArr);
                 }
 
+                if (questItem.Value.Stages.Any(a => a.Value.IsFinished == true))
+                {
+                    questTable.Add("hasFinished", true);
+                }
+
                 var stages = questItem.Value.Stages;
                 foreach (var stageItem in stages)
                 {
