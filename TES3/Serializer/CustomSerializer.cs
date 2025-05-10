@@ -13,13 +13,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Quest_Data_Builder.TES3.Serializer
 {
     public enum SerializerType
     {
         Lua,
-        Json
+        Json,
+        Yaml
     }
 
     internal partial class CustomSerializer
@@ -48,6 +51,38 @@ namespace Quest_Data_Builder.TES3.Serializer
             {
                 case SerializerType.Lua: return new LTable();
                 default: return new JArray();
+            }
+        }
+
+        public static object? ConvertJTokenToObject(JToken token)
+        {
+            return token.Type switch
+            {
+                JTokenType.Object => token.Children<JProperty>()
+                    .ToDictionary(prop => prop.Name, prop => ConvertJTokenToObject(prop.Value)),
+
+                JTokenType.Array => token.Select(ConvertJTokenToObject).ToList(),
+
+                JTokenType.Integer => token.ToObject<int>(),
+                JTokenType.Float => token.ToObject<double>(),
+                JTokenType.Boolean => token.ToObject<bool>(),
+                JTokenType.Null => null,
+                _ => token.ToString()
+            };
+        }
+
+        private string getResult(dynamic obj)
+        {
+            switch (_type)
+            {
+                case SerializerType.Lua: return "return " + obj.ToString();
+
+                case SerializerType.Yaml:
+                    var jObj = ConvertJTokenToObject(obj);
+                    var serializer = new SerializerBuilder().WithEventEmitter(a => new YamlChainedEventEmitter(a)).Build();
+                    return serializer.Serialize(jObj);
+
+                default: return obj.ToString();
             }
         }
 
@@ -94,7 +129,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 table.Add(cellDataItem.Key.ToLower(), cellTable);
             }
 
-            return (_type == SerializerType.Lua ? "return " : "") + table.ToString();
+            return getResult(table);
         }
 
         public string TopicByName()
@@ -114,7 +149,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 }
             }
 
-            return (_type == SerializerType.Lua ? "return " : "") + table.ToString();
+            return getResult(table);
         }
 
 
@@ -254,7 +289,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 }
                 table.Add(questItem.Value.Id.ToLower(), questTable);
             }
-            return (_type == SerializerType.Lua ? "return " : "") + table.ToString();
+            return getResult(table);
         }
 
         public string TopicById()
@@ -274,7 +309,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 }
             }
 
-            return (_type == SerializerType.Lua ? "return " : "") + table.ToString();
+            return getResult(table);
         }
 
         public string QuestByTopicText()
@@ -313,7 +348,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 table.Add(topicItem.Key, subBlock);
             }
 
-            return (_type == SerializerType.Lua ? "return " : "") + table.ToString();
+            return getResult(table);
         }
 
         public string QuestObjects()
@@ -457,7 +492,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 table.Add(objectItem.Key.ToLower(), objectTable);
             }
 
-            return (_type == SerializerType.Lua ? "return " : "") + table.ToString();
+            return getResult(table);
         }
 
         public string QuestObjectPositions()
@@ -512,7 +547,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 table.Add(positionsItem.Key.ToLower(), subTable);
             }
 
-            return (_type == SerializerType.Lua ? "return " : "") + table.ToString();
+            return getResult(table);
         }
 
 
@@ -533,7 +568,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 table.Add(dataItem.Key.ToLower(), subTable);
             }
 
-            return (_type == SerializerType.Lua ? "return " : "") + table.ToString();
+            return getResult(table);
         }
 
 
@@ -581,7 +616,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 table.Add(scriptItem.Key.ToLower(), varsTable);
             }
 
-            return (_type == SerializerType.Lua ? "return " : "") + table.ToString();
+            return getResult(table);
         }
 
     }
