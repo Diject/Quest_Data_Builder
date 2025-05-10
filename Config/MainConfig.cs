@@ -1,9 +1,11 @@
 ﻿using Newtonsoft.Json;
 using Quest_Data_Builder.Core;
 using Quest_Data_Builder.Logger;
+using Quest_Data_Builder.TES3.Serializer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using static Quest_Data_Builder.Program;
@@ -53,6 +55,9 @@ namespace Quest_Data_Builder.Config
         /// Number of steps in a quest to be considered a quest that an object can start(give)
         /// </summary>
         public static int StagesNumToAddQuestInfo = 1;
+
+        public static SerializerType OutputFormatType = SerializerType.Json;
+        public static string OutputFileFormat = "json";
 
 
 
@@ -143,6 +148,22 @@ namespace Quest_Data_Builder.Config
                     outGameFileList.Add(gameFiles.ElementAt(i).ToString());
                 }
                 GameFiles = outGameFileList;
+            }
+
+            if (jsonData.outputFormat is not null)
+            {
+                OutputFormatType = (string)jsonData.outputFormat switch
+                {
+                    "yaml" => SerializerType.Yaml,
+                    "lua" => SerializerType.Lua,
+                    _ => SerializerType.Json,
+                };
+                OutputFileFormat = (string)jsonData.outputFormat switch
+                {
+                    "yaml" => "yaml",
+                    "lua" => "lua",
+                    _ => "json",
+                };
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");
