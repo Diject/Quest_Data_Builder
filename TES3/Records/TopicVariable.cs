@@ -15,7 +15,7 @@ namespace Quest_Data_Builder.TES3.Records
         public readonly SCVROperator Operator;
         public readonly string Name = "";
         public float? FLTV; //Needs to set manually
-        public UInt32? INTV; //Needs to set manually
+        public Int32? INTV; //Needs to set manually
 
         public float? FloatValue { get { return FLTV; } }
         public float? IntValue { get { return INTV; } }

@@ -150,7 +150,7 @@ namespace Quest_Data_Builder.TES3.Records
                             }
                         case "INTV":
                             {
-                                Variables.Last().INTV = reader.ReadUInt32();
+                                Variables.Last().INTV = reader.ReadInt32();
                                 break;
                             }
                         case "FLTV":
