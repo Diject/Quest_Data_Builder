@@ -189,7 +189,7 @@ namespace Quest_Data_Builder
             }
 
 
-            var jsonSer = new CustomSerializer(MainConfig.OutputFormatType, dataProcessor);
+            var jsonSer = new DataSerializer(MainConfig.OutputFormatType, dataProcessor);
 
             try
             {
@@ -198,8 +198,11 @@ namespace Quest_Data_Builder
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects." + MainConfig.OutputFileFormat]), jsonSer.QuestObjects(), MainConfig.FileEncoding);
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables." + MainConfig.OutputFileFormat]), jsonSer.LocalVariableDataByScriptId(), MainConfig.FileEncoding);
 
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), CustomSerializer.LuaAnnotations, MainConfig.FileEncoding);
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "info.lua"]), "return " + (new GeneratedDataInfo(MainConfig.GameFiles).ToString()), MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), DataSerializer.LuaAnnotations, MainConfig.FileEncoding);
+                File.WriteAllText(
+                    Path.Combine([MainConfig.OutputDirectory, "info." + MainConfig.OutputFileFormat]),
+                    new GeneratedDataInfo(MainConfig.GameFiles, MainConfig.OutputFormatType).ToString()
+                );
             }
             catch (Exception ex)
             {

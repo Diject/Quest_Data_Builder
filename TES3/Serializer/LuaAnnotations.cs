@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Serializer
 {
-    internal partial class CustomSerializer
+    internal partial class DataSerializer
     {
         public static string LuaAnnotations = @"
 ---@class questDataGenerator.requirementData
