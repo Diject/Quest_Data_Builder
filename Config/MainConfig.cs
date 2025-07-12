@@ -8,6 +8,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 using static Quest_Data_Builder.Program;
 
 namespace Quest_Data_Builder.Config
@@ -66,9 +68,11 @@ namespace Quest_Data_Builder.Config
             CustomLogger.WriteLine(LogLevel.Info, "Loading configuration file...");
 
             string text;
+            string? extension;
             try
             {
                 text = File.ReadAllText(filename);
+                extension = Path.GetExtension(filename)?.ToLower();
             }
             catch (Exception e)
             {
@@ -76,73 +80,82 @@ namespace Quest_Data_Builder.Config
                 return false;
             }
 
-            dynamic? jsonData = JsonConvert.DeserializeObject(text);
+            var yamlDeserializer = new DeserializerBuilder()
+                .WithNamingConvention(NullNamingConvention.Instance)
+                .Build();
 
-            if (jsonData is null)
+            dynamic? configData = extension switch
+            {
+                "json" => JsonConvert.DeserializeObject(text),
+                "yaml" => yamlDeserializer.Deserialize(text),
+                _ => null,
+            };
+
+            if (configData is null)
             {
                 CustomLogger.WriteLine(LogLevel.Error, "Error: Failed to load configuration file.");
                 return false;
             }
 
-            if ((object)jsonData.logLevel is not null)
+            if ((object)configData.logLevel is not null)
             {
-                LogLevel = (LogLevel)jsonData.logLevel;
+                LogLevel = (LogLevel)configData.logLevel;
             }
 
-            if ((object)jsonData.directory is not null)
+            if ((object)configData.directory is not null)
             {
-                MorrowindDirectory = (string)jsonData.directory;
+                MorrowindDirectory = (string)configData.directory;
             }
 
-            if ((object)jsonData.output is not null)
+            if ((object)configData.output is not null)
             {
-                OutputDirectory = (string)jsonData.output;
+                OutputDirectory = (string)configData.output;
             }
 
-            if ((object)jsonData.encoding is not null)
+            if ((object)configData.encoding is not null)
             {
-                FileEncoding = Encoding.GetEncoding((int)jsonData.encoding);
+                FileEncoding = Encoding.GetEncoding((int)configData.encoding);
             }
 
-            if ((object)jsonData.maxPos is not null)
+            if ((object)configData.maxPos is not null)
             {
-                MaxObjectPositions = (int)jsonData.maxPos;
+                MaxObjectPositions = (int)configData.maxPos;
             }
 
-            if ((object)jsonData.removeUnused is not null)
+            if ((object)configData.removeUnused is not null)
             {
-                RemoveUnused = (bool)jsonData.removeUnused;
+                RemoveUnused = (bool)configData.removeUnused;
             }
 
-            if ((object)jsonData.findDialogueLinks is not null)
+            if ((object)configData.findDialogueLinks is not null)
             {
-                FindLinksBetweenDialogues = (bool)jsonData.findDialogueLinks;
+                FindLinksBetweenDialogues = (bool)configData.findDialogueLinks;
             }
 
-            if ((object)jsonData.dialogueSearchDepth is not null)
+            if ((object)configData.dialogueSearchDepth is not null)
             {
-                DialogueSearchDepth = (int)jsonData.dialogueSearchDepth;
+                DialogueSearchDepth = (int)configData.dialogueSearchDepth;
             }
 
-            if ((object)jsonData.roundFractionalDigits is not null)
+            if ((object)configData.roundFractionalDigits is not null)
             {
-                RoundFractionalDigits = (int)jsonData.roundFractionalDigits;
+                RoundFractionalDigits = (int)configData.roundFractionalDigits;
             }
 
-            if ((object)jsonData.optimizeData is not null)
+            if ((object)configData.optimizeData is not null)
             {
-                OptimizeData = (bool)jsonData.optimizeData;
+                OptimizeData = (bool)configData.optimizeData;
             }
 
-            if ((object)jsonData.stagesNumToAddQuestInfo is not null)
+            if ((object)configData.stagesNumToAddQuestInfo is not null)
             {
-                StagesNumToAddQuestInfo = (int)jsonData.stagesNumToAddQuestInfo;
+                StagesNumToAddQuestInfo = (int)configData.stagesNumToAddQuestInfo;
             }
 
-            if ((object)jsonData.gameFiles is not null)
+            if ((object)configData.gameFiles is not null)
             {
                 var outGameFileList = new List<string>();
-                Newtonsoft.Json.Linq.JArray gameFiles = (Newtonsoft.Json.Linq.JArray)jsonData.gameFiles;
+                Newtonsoft.Json.Linq.JArray gameFiles = (Newtonsoft.Json.Linq.JArray)configData.gameFiles;
                 for (int i = 0; i < gameFiles.Count; i++)
                 {
                     outGameFileList.Add(gameFiles.ElementAt(i).ToString());
@@ -150,15 +163,15 @@ namespace Quest_Data_Builder.Config
                 GameFiles = outGameFileList;
             }
 
-            if (jsonData.outputFormat is not null)
+            if (configData.outputFormat is not null)
             {
-                OutputFormatType = (string)jsonData.outputFormat switch
+                OutputFormatType = (string)configData.outputFormat switch
                 {
                     "yaml" => SerializerType.Yaml,
                     "lua" => SerializerType.Lua,
                     _ => SerializerType.Json,
                 };
-                OutputFileFormat = (string)jsonData.outputFormat switch
+                OutputFileFormat = (string)configData.outputFormat switch
                 {
                     "yaml" => "yaml",
                     "lua" => "lua",
