@@ -18,6 +18,7 @@ using Quest_Data_Builder.Extentions;
 using System.Text;
 using Newtonsoft.Json;
 using Quest_Data_Builder.Config;
+using Quest_Data_Builder.Initializer;
 
 namespace Quest_Data_Builder
 {
@@ -32,103 +33,35 @@ namespace Quest_Data_Builder
 
             var options = Parser.Default.ParseArguments<Options>(args).WithParsed(options =>
             {
-                if (options.InputFile is not null)
+                if (options.ConfigFile is not null)
                 {
-                    MainConfig.LoadConfiguration(options.InputFile);
-                }
-
-                if (options.Directory is not null)
-                {
-                    MainConfig.MorrowindDirectory = options.Directory;
-                }
-
-                if (options.Encoding is not null)
-                {
-                    MainConfig.FileEncoding = Encoding.GetEncoding((int)options.Encoding);
-                }
-
-                if (options.MaxObjectPositions is not null)
-                {
-                    MainConfig.MaxObjectPositions = (int)options.MaxObjectPositions;
+                    MainConfig.LoadConfiguration(options.ConfigFile);
                 }
 
                 if (options.LogLevel is not null)
                 {
                     MainConfig.LogLevel = (LogLevel)options.LogLevel;
                 }
-
-                if (options.Output is not null)
-                {
-                    MainConfig.OutputDirectory = options.Output;
-                }
-
-                if (options.RemoveUnused is not null)
-                {
-                    MainConfig.RemoveUnused = options.RemoveUnused ?? false;
-                }
             });
 
+            if (!MainConfig.Initialize())
             {
-                if (MainConfig.GameFiles is null || MainConfig.GameFiles.Count == 0)
-                {
-                    CustomLogger.WriteLine(LogLevel.Text, "Using \"morrowind.ini\" to generate data");
-
-                    string? morrowindDirectory = MainConfig.MorrowindDirectory ?? DirectoryUtils.GetParentDirectoryPathWithName(Directory.GetCurrentDirectory(), "morrowind");
-                    if (morrowindDirectory is null)
-                    {
-                        CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find morrowind directory.");
-                        return;
-                    }
-
-                    string morrowindIni = morrowindDirectory + @"\morrowind.ini";
-                    if (!File.Exists(morrowindIni))
-                    {
-                        CustomLogger.WriteLine(LogLevel.Error, "Error: cannot find \"morrowind.ini\"");
-                        return;
-                    }
-
-                    try
-                    {
-                        var matches = DataFileRegex().Matches(File.ReadAllText(morrowindIni));
-                        var morrowindFiles = new SortedList<uint, string>();
-                        foreach (Match match in matches)
-                        {
-                            string filePath = Path.Combine(morrowindDirectory, "Data Files", match.Groups[2].Value.Replace("\r", ""));
-                            CustomLogger.WriteLine(LogLevel.Info, $"file path: \"{filePath}\"");
-                            morrowindFiles.TryAdd(uint.Parse(match.Groups[1].Value), filePath);
-                        }
-
-                        MainConfig.GameFiles = new List<string>(morrowindFiles.Values);
-                    }
-                    catch (Exception ex)
-                    {
-                        CustomLogger.RegisterErrorException(ex);
-                        CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
-                        return;
-                    }
-                }
-                else
-                {
-                    CustomLogger.WriteLine(LogLevel.Text, "Using info from configuration file to generate data");
-
-                    if (MainConfig.GameFiles is null)
-                    {
-                        CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not listed");
-                        return;
-                    }
-                }
-            }
-
-            if (MainConfig.GameFiles.Count == 0)
-            {
-                CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not listed");
+                CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
                 return;
             }
 
             var recordData = new List<RecordDataHandler>();
 
-            foreach (var filePath in MainConfig.GameFiles)
+            foreach (var filePath in MainConfig.Files!)
             {
+                if (Path.GetExtension(Path.GetFileName(filePath)) != ".esp" &&
+                    Path.GetExtension(Path.GetFileName(filePath)) != ".esm" &&
+                    Path.GetExtension(Path.GetFileName(filePath)) != ".omwaddon")
+                {
+                    CustomLogger.WriteLine(LogLevel.Warn, $"skipping file \"{filePath}\", not a valid data file");
+                    continue;
+                }
+
                 CustomLogger.WriteLine(LogLevel.Text, $"processing \"{filePath}\"");
                 try
                 {
@@ -193,6 +126,7 @@ namespace Quest_Data_Builder
 
             try
             {
+                Directory.CreateDirectory(MainConfig.OutputDirectory);
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests." + MainConfig.OutputFileFormat]), jsonSer.QuestData(), MainConfig.FileEncoding);
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText." + MainConfig.OutputFileFormat]), jsonSer.QuestByTopicText(), MainConfig.FileEncoding);
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects." + MainConfig.OutputFileFormat]), jsonSer.QuestObjects(), MainConfig.FileEncoding);
@@ -201,7 +135,7 @@ namespace Quest_Data_Builder
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), DataSerializer.LuaAnnotations, MainConfig.FileEncoding);
                 File.WriteAllText(
                     Path.Combine([MainConfig.OutputDirectory, "info." + MainConfig.OutputFileFormat]),
-                    new GeneratedDataInfo(MainConfig.GameFiles, MainConfig.OutputFormatType).ToString()
+                    new GeneratedDataInfo(MainConfig.Files, MainConfig.OutputFormatType).ToString()
                 );
             }
             catch (Exception ex)
@@ -211,7 +145,7 @@ namespace Quest_Data_Builder
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
             }
 
-            CustomLogger.WriteLine(LogLevel.Text, $"Completed with {CustomLogger.Errors.Count} errors");
+            CustomLogger.WriteLine(LogLevel.Text, $"\nCompleted with {CustomLogger.Errors.Count} errors");
         }
 
         public class Options
@@ -219,23 +153,8 @@ namespace Quest_Data_Builder
             [Option('l', "logLevel", Required = false, HelpText = "Log level. From 0 to 3.")]
             public uint? LogLevel { get; set; }
 
-            [Option('d', "directory", Required = false, HelpText = "Path to the game directory. If set and \"-f\" doesn't, the parser will attempt to get info about active mods from \"morrowind.ini\".")]
-            public string? Directory { get; set; }
-
-            [Option('o', "output", Required = false, HelpText = "Output directory for result data. If doesn't set, the data will be placed in the parser directory.")]
-            public string? Output { get; set; }
-
-            [Option('p', "maxPos", Required = false, HelpText = "Maximum number of positions for an object.")]
-            public int? MaxObjectPositions { get; set; }
-
-            [Option('e', "encoding", Required = false, HelpText = "Encoding of the game. (1252, 1251, 1250)")]
-            public int? Encoding { get; set; }
-
-            [Option('i', "inputFile", Required = false, HelpText = "Input config file with required data.")]
-            public string? InputFile { get; set; }
-
-            [Option('u', "removeUnused", Required = false, HelpText = "Remove unused quest objects from the output data. true by default.")]
-            public bool? RemoveUnused { get; set; }
+            [Option('c', "configFile", Required = false, HelpText = "Input config file with required data.")]
+            public string? ConfigFile { get; set; }
         }
 
         [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?)[ ;\\t]*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
