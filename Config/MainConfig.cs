@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Quest_Data_Builder.Core;
+using Quest_Data_Builder.Initializer;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Serializer;
 using System;
@@ -14,8 +15,17 @@ using static Quest_Data_Builder.Program;
 
 namespace Quest_Data_Builder.Config
 {
+    enum InitializerType
+    {
+        Auto,
+        ConfigFile,
+        Manual
+    }
+
     static class MainConfig
     {
+        public static InitializerType InitializerType = InitializerType.Manual;
+
         public static int MaxObjectPositions = 50;
 
         public static Encoding FileEncoding
@@ -35,13 +45,13 @@ namespace Quest_Data_Builder.Config
             set { CustomLogger.Level = value; }
         }
 
-        public static string MorrowindDirectory = "";
+        public static string? MorrowindDirectory;
 
-        public static string? MorrowindIni;
+        public static List<string>? Files; // game files with full paths
 
         public static List<string>? GameFiles;
 
-        public static string OutputDirectory = "";
+        public static string OutputDirectory = "questData";
 
         public static bool RemoveUnused = true;
 
@@ -62,10 +72,274 @@ namespace Quest_Data_Builder.Config
         public static string OutputFileFormat = "json";
 
 
+        public static bool Initialize(bool loadInitialDataFromRootConfig = true)
+        {
+            if (loadInitialDataFromRootConfig)
+            {
+                if (File.Exists("config.json"))
+                {
+                    LoadConfiguration("config.json");
+                }
+                else if (File.Exists("config.yaml"))
+                {
+                    LoadConfiguration("config.yaml");
+                }
+                else
+                {
+                    CustomLogger.WriteLine(LogLevel.Info, "Root configuration file not found. Using default settings.");
+                }
+
+                if (InitializerType == InitializerType.ConfigFile)
+                {
+                    CustomLogger.WriteLine(LogLevel.Text, "Using configuration from config file.");
+                    return true;
+                }
+            }
+
+
+            if (InitializerType == InitializerType.Auto)
+            {
+                CustomLogger.WriteLine(LogLevel.Text, "Initializing automatically...");
+
+                var mwBaseHandler = new MorrowindBaseDataHandler(MorrowindDirectory);
+                if (mwBaseHandler.IsValid)
+                {
+                    MorrowindDirectory = mwBaseHandler.MorrowindDirectory!;
+                    Files = new List<string>();
+
+                    foreach (var file in mwBaseHandler.dataFiles)
+                    {
+                        var filePath = Path.Combine(mwBaseHandler.MorrowindDataDirectory!, file);
+                        if (File.Exists(filePath))
+                        {
+                            Files.Add(filePath);
+                        }
+                        else
+                        {
+                            CustomLogger.WriteLine(LogLevel.Warn, $"File not found: {filePath}");
+                        }
+                    }
+
+                    CustomLogger.WriteLine(LogLevel.Text, "Morrowind directory and data files have been initialized from the base handler.");
+                    return true;
+                }
+
+
+                var omwHandler = new OMWDataHandler();
+                if (omwHandler.IsValid)
+                {
+                    var omwProfileName = omwHandler.CurrentProfile ?? omwHandler.ProfileNames.FirstOrDefault();
+                    if (omwProfileName is null)
+                    {
+                        CustomLogger.WriteLine(LogLevel.Warn, "No OMW profile found.");
+                        return false;
+                    }
+
+                    CustomLogger.WriteLine(LogLevel.Text, "Using OMW profile: " + omwProfileName);
+
+                    var gameFiles = omwHandler.GetFullGameFilePaths(omwProfileName);
+                    if (gameFiles is null || gameFiles.Count == 0)
+                    {
+                        CustomLogger.WriteLine(LogLevel.Warn, "No game files found in OMW profile.");
+                        return false;
+                    }
+
+                    Files = gameFiles;
+
+                    if (omwHandler.Encoding is not null)
+                    {
+                        FileEncoding = omwHandler.Encoding;
+                    }
+
+                    CustomLogger.WriteLine(LogLevel.Text, "Morrowind data files have been initialized from OMW handler.");
+                    return true;
+                }
+
+
+                var mo2Handler = new MO2DataHandler();
+                if (mo2Handler.IsValid)
+                {
+                    var mo2ProfileName = mo2Handler.CurrentProfile ?? mo2Handler.ProfileNames.FirstOrDefault();
+                    if (mo2ProfileName is null)
+                    {
+                        CustomLogger.WriteLine(LogLevel.Warn, "No MO2 profile found.");
+                        return false;
+                    }
+
+                    CustomLogger.WriteLine(LogLevel.Text, "Using MO2 profile: " + mo2ProfileName);
+
+                    var gameFiles = mo2Handler.GetFullGameFilePaths(mo2ProfileName);
+                    if (gameFiles is null || gameFiles.Count == 0)
+                    {
+                        CustomLogger.WriteLine(LogLevel.Warn, "No game files found in MO2 profile.");
+                        return false;
+                    }
+
+                    MorrowindDirectory = mo2Handler.MorrowindDirectory;
+                    Files = gameFiles;
+
+                    CustomLogger.WriteLine(LogLevel.Text, "Morrowind data files have been initialized from MO2 handler.");
+                    return true;
+                }
+
+
+                return false;
+            }
+
+
+            if (InitializerType == InitializerType.Manual)
+            {
+                var mwBaseHandler = new MorrowindBaseDataHandler(MorrowindDirectory);
+                var omwHandler = new OMWDataHandler();
+                var mo2Handler = new MO2DataHandler();
+
+                List<(dynamic handler, string mesage)> handlers = new();
+
+                if (mwBaseHandler.IsValid)
+                {
+                    string message = $"Morrowind.ini from directory: {mwBaseHandler.MorrowindDirectory}";
+                    handlers.Add((mwBaseHandler, message));
+                }
+                if (omwHandler.IsValid)
+                {
+                    string message = $"OpenMW profile";
+                    handlers.Add((omwHandler, message));
+                }
+                if (mo2Handler.IsValid)
+                {
+                    string message = $"Mod Organizer 2 profile";
+                    handlers.Add((mo2Handler, message));
+                }
+
+                if (handlers.Count == 0)
+                {
+                    CustomLogger.WriteLine(LogLevel.Error, "No valid data sources found for Morrowind files.");
+                }
+
+                void WriteAvailableHandlers()
+                {
+                    CustomLogger.WriteLine(LogLevel.Text, "\nSelect data source for Morrowind files:");
+                    for (int i = 0; i < handlers.Count; i++)
+                    {
+                        var handlerData = handlers[i];
+                        CustomLogger.WriteLine(LogLevel.Text, $"{i + 1}. {handlerData.mesage}");
+                    }
+                }
+                
+                dynamic? selectedHandler = null;
+                for (; ;)
+                {
+                    WriteAvailableHandlers();
+                    CustomLogger.WriteLine(LogLevel.Text, "\nEnter the number of the data source to use, or 'q' to quit:");
+                    string? input = Console.ReadLine();
+                    if (input is null || input.Trim().ToLower() == "q")
+                    {
+                        CustomLogger.WriteLine(LogLevel.Text, "\nExiting initialization.");
+                        return false;
+                    }
+                    if (int.TryParse(input, out int choice) && choice > 0 && choice <= handlers.Count)
+                    {
+                        choice--;
+                        selectedHandler = handlers[choice].handler;
+                        CustomLogger.WriteLine(LogLevel.Text, $"\nSelected data source: {handlers[choice].mesage}");
+                        break;
+                    }
+                    else
+                    {
+                        CustomLogger.WriteLine(LogLevel.Error, "\nInvalid choice. Please try again.");
+                    }
+                }
+
+                if (selectedHandler is null) return false;
+
+                if (selectedHandler.Type == InitializatorType.MorrowindHandler)
+                {
+                    MorrowindDirectory = mwBaseHandler.MorrowindDirectory!;
+                    Files = new List<string>();
+
+                    foreach (var file in mwBaseHandler.dataFiles)
+                    {
+                        var filePath = Path.Combine(mwBaseHandler.MorrowindDataDirectory!, file);
+                        if (File.Exists(filePath))
+                        {
+                            Files.Add(filePath);
+                        }
+                        else
+                        {
+                            CustomLogger.WriteLine(LogLevel.Warn, $"File not found: {filePath}");
+                        }
+                    }
+
+                    CustomLogger.WriteLine(LogLevel.Text, "\nMorrowind directory and data files have been initialized from the base handler.");
+                    return true;
+                }
+                else
+                {
+                    List<string> profileNames = selectedHandler.ProfileNames;
+                    if (profileNames.Count == 0)
+                    {
+                        CustomLogger.WriteLine(LogLevel.Error, "\nNo profiles found in the selected handler.");
+                        return false;
+                    }
+
+                    CustomLogger.WriteLine(LogLevel.Text, "\nSelect a profile from the available profiles:");
+                    for (int i = 0; i < profileNames.Count; i++)
+                    {
+                        CustomLogger.WriteLine(LogLevel.Text, $"{i + 1}. {profileNames[i]}");
+                    }
+
+                    CustomLogger.WriteLine(LogLevel.Text, "\nEnter the number of the profile to use, or 'q' to quit:");
+                    for (; ;)
+                    {
+                        string? profileInput = Console.ReadLine();
+                        if (profileInput is null || profileInput.Trim().ToLower() == "q")
+                        {
+                            CustomLogger.WriteLine(LogLevel.Text, "\nExiting initialization.");
+                            return false;
+                        }
+
+                        if (int.TryParse(profileInput, out int profileChoice) && profileChoice > 0 && profileChoice <= profileNames.Count)
+                        {
+                            string selectedProfile = profileNames[profileChoice - 1];
+                            CustomLogger.WriteLine(LogLevel.Text, $"\nSelected profile: {selectedProfile}");
+
+                            var gameFiles = selectedHandler.GetFullGameFilePaths(selectedProfile);
+                            if (gameFiles is null || gameFiles.Count == 0)
+                            {
+                                CustomLogger.WriteLine(LogLevel.Warn, "\nNo game files found in the selected profile.");
+                                return false;
+                            }
+
+                            Files = gameFiles;
+
+                            CustomLogger.WriteLine(LogLevel.Text, "\nMorrowind data files have been initialized from the selected handler.");
+                            return true;
+                        }
+                        else
+                        {
+                            CustomLogger.WriteLine(LogLevel.Error, "\nInvalid choice. Please try again.");
+                        }
+                    }
+                }
+            }
+
+
+            
+
+            return false;
+        }
+
+
 
         public static bool LoadConfiguration(string filename)
         {
-            CustomLogger.WriteLine(LogLevel.Info, "Loading configuration file...");
+            CustomLogger.WriteLine(LogLevel.Info, "Loading configuration file: " + filename);
+
+            if (!File.Exists(filename))
+            {
+                CustomLogger.WriteLine(LogLevel.Error, "Error: Configuration file does not exist.");
+                return false;
+            }
 
             string text;
             string? extension;
