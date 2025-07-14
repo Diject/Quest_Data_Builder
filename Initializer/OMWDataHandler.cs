@@ -11,12 +11,38 @@ namespace Quest_Data_Builder.Initializer
 {
     internal class OMWDataHandler
     {
+        public readonly InitializatorType Type = InitializatorType.OMWHandler;
 
-        private readonly Dictionary<string, (List<string> data, List<string> content)> profiles = new();
-        private string? currentProfile;
+        private readonly Dictionary<string, (List<string> data, List<string> content)> profilesData = new();
         private readonly string? launcherCfgPath;
         private readonly string? openmwCfgPath;
         private string? encoding;
+
+
+        public bool IsValid => !string.IsNullOrEmpty(this.launcherCfgPath) && !string.IsNullOrEmpty(this.openmwCfgPath) && this.profilesData.Count > 0;
+        public string? CurrentProfile;
+        public List<string> ProfileNames => this.profilesData.Keys.ToList();
+        public Encoding? Encoding
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this.encoding))
+                {
+                    return null;
+                }
+                try
+                {
+                    return Encoding.GetEncoding(this.encoding);
+                }
+                catch (ArgumentException)
+                {
+                    CustomLogger.WriteLine(LogLevel.Error, $"Invalid encoding specified: {this.encoding}.");
+                    return null;
+                }
+            }
+        }
+
+
 
         public OMWDataHandler(string? launcherCfgPathParam, string? openmwCfgPathParam)
         {
@@ -66,7 +92,7 @@ namespace Quest_Data_Builder.Initializer
 
         public OMWDataHandler() : this(null, null)
         {
-            
+
         }
 
 
@@ -140,7 +166,7 @@ namespace Quest_Data_Builder.Initializer
 
             // Custom parser because OpenMW's openmw.cfg is not a standard INI file
             var text = File.ReadAllText(Environment.ExpandEnvironmentVariables(filePath), Encoding.UTF8);
-            
+
             var entries = Regex.Matches(text, @"(\w+)\s*=\s*(.+)", RegexOptions.IgnoreCase);
             if (entries.Count == 0)
             {
@@ -148,14 +174,14 @@ namespace Quest_Data_Builder.Initializer
                 return false;
             }
 
-            bool hadDefaultProfile = this.profiles.ContainsKey("Default");
-            if (this.currentProfile == null)
+            bool hadDefaultProfile = this.profilesData.ContainsKey("Default");
+            if (this.CurrentProfile == null)
             {
-                this.currentProfile = "Default";
-                if (!this.profiles.TryGetValue(this.currentProfile, out var profileData))
+                this.CurrentProfile = "Default";
+                if (!this.profilesData.TryGetValue(this.CurrentProfile, out var profileData))
                 {
                     profileData = (new(), new());
-                    this.profiles.Add(this.currentProfile, profileData);
+                    this.profilesData.Add(this.CurrentProfile, profileData);
                 }
             }
 
@@ -173,7 +199,7 @@ namespace Quest_Data_Builder.Initializer
 
                 if (hadDefaultProfile) continue;
 
-                if (this.profiles.TryGetValue(this.currentProfile, out var profileData))
+                if (this.profilesData.TryGetValue(this.CurrentProfile, out var profileData))
                 {
                     switch (key)
                     {
@@ -219,9 +245,9 @@ namespace Quest_Data_Builder.Initializer
                 CustomLogger.WriteLine(LogLevel.Warn, "Current profile not found in OpenMW launcher.cfg.");
                 return false;
             }
-            this.currentProfile = currentProfileMatch.Groups[1].Value.Trim();
+            this.CurrentProfile = currentProfileMatch.Groups[1].Value.Trim();
 
-            CustomLogger.WriteLine(LogLevel.Info, $"OpenMW current profile: {currentProfile}");
+            CustomLogger.WriteLine(LogLevel.Info, $"OpenMW current profile: {CurrentProfile}");
 
             var profileEntries = Regex.Matches(profileSectionText, @"(\w+)/(\w+)\s*=\s*(.+)", RegexOptions.IgnoreCase);
             if (profileEntries.Count == 0)
@@ -236,10 +262,10 @@ namespace Quest_Data_Builder.Initializer
                 var dataType = profileEntry.Groups[2].Value.Trim();
                 var dataValue = profileEntry.Groups[3].Value.Trim();
 
-                if (!this.profiles.TryGetValue(profileName, out var profileData))
+                if (!this.profilesData.TryGetValue(profileName, out var profileData))
                 {
                     profileData = (new(), new());
-                    this.profiles.Add(profileName, profileData);
+                    this.profilesData.Add(profileName, profileData);
                 }
 
                 switch (dataType)
@@ -258,6 +284,18 @@ namespace Quest_Data_Builder.Initializer
             }
 
             return true;
+        }
+
+
+        public List<string>? GetFullGameFilePaths(string profileName)
+        {
+            if (string.IsNullOrEmpty(profileName) || !this.profilesData.TryGetValue(profileName, out var profileData))
+            {
+                CustomLogger.WriteLine(LogLevel.Warn, $"Profile \"{profileName}\" not found in OpenMW data.");
+                return null;
+            }
+
+            return FileLocator.ResolveFullFilePaths(profileData.content, profileData.data);
         }
     }
 }

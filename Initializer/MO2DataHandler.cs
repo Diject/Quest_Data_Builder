@@ -17,12 +17,23 @@ namespace Quest_Data_Builder.Initializer
 
     internal class MO2DataHandler
     {
+        public readonly InitializatorType Type = InitializatorType.MO2Handler;
+
         private readonly Dictionary<string, ProfileData> profiles = new();
         private readonly string? baseDirectory;
+
         public readonly string? MorrowindDirectory;
+        public string? CurrentProfile;
+        public List<string> ProfileNames => profiles.Keys.ToList();
+
+
+        public bool IsValid => !string.IsNullOrEmpty(this.MorrowindDirectory) && this.profiles.Count > 0;
+
 
         public MO2DataHandler(string? baseDirectory)
         {
+            if (!OperatingSystem.IsWindows()) return;
+
             if (!string.IsNullOrEmpty(baseDirectory))
             {
                 this.baseDirectory = baseDirectory;
@@ -53,11 +64,12 @@ namespace Quest_Data_Builder.Initializer
                 return;
             }
 
+
             string modOrganizerIniContent = File.ReadAllText(Path.Combine(this.baseDirectory, "ModOrganizer.ini"));
             var gamePathMathch = Regex.Match(modOrganizerIniContent, @"^gamePath\s*=\s*@ByteArray\((.+)\)", RegexOptions.Multiline | RegexOptions.IgnoreCase);
             if (gamePathMathch.Success)
             {
-                string gamePath = gamePathMathch.Groups[1].Value.Trim();
+                string gamePath = gamePathMathch.Groups[1].Value.Trim().Replace(@"\\", @"\");
                 if (Directory.Exists(gamePath))
                 {
                     this.MorrowindDirectory = gamePath;
@@ -74,6 +86,7 @@ namespace Quest_Data_Builder.Initializer
                 CustomLogger.WriteLine(LogLevel.Error, "Failed to find Morrowind directory in ModOrganizer.ini.");
                 return;
             }
+
 
             if (!Directory.Exists(Path.Combine(this.baseDirectory, "profiles")))
             {
@@ -125,26 +138,15 @@ namespace Quest_Data_Builder.Initializer
                 string morrowindIniPath = Path.Combine(profilePath, "Morrowind.ini");
                 if (File.Exists(morrowindIniPath))
                 {
-                    string morrowindIniText = File.ReadAllText(morrowindIniPath);
-                    var gameFilesRegex = Regex.Matches(morrowindIniText, @"GameFile(\d+)=(.*)", RegexOptions.IgnoreCase);
-                    SortedList<int, string> gameFiles = new();
-                    foreach (Match match in gameFilesRegex)
+                    var gameFiles = MorrowindBaseDataHandler.GetMorrowindIniGameFiles(morrowindIniPath);
+                    if (gameFiles is not null)
                     {
-                        string gameFile = match.Groups[2].Value.Trim();
-                        if (!string.IsNullOrEmpty(gameFile))
-                        {
-                            if (gameFiles.ContainsKey(int.Parse(match.Groups[1].Value)))
-                            {
-                                CustomLogger.WriteLine(LogLevel.Warn, $"Duplicate GameFile entry found in Morrowind.ini: {gameFile}");
-                            }
-                            else
-                            {
-                                gameFiles.Add(int.Parse(match.Groups[1].Value), gameFile);
-                            }
-                        }
+                        profileData.Content.AddRange(gameFiles);
                     }
-
-                    profileData.Content.AddRange(gameFiles.Values);
+                    else
+                    {
+                        CustomLogger.WriteLine(LogLevel.Warn, $"No game files found in \"Morrowind.ini\" for profile: {profileName}");
+                    }
                 }
                 else
                 {
@@ -153,8 +155,23 @@ namespace Quest_Data_Builder.Initializer
                 }
 
 
-                this.profiles.Add(profilePath, profileData);
+                this.profiles.Add(profileName, profileData);
                 CustomLogger.WriteLine(LogLevel.Text, $"MO2 data for profile \"{profileName}\" loaded successfully.");
+            }
+
+
+            var currentProfileMatch = Regex.Match(modOrganizerIniContent, @"^selected_profile\s*=\s*@ByteArray\((.+)\)", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            if (currentProfileMatch.Success)
+            {
+                var currentProfileName = currentProfileMatch.Groups[1].Value;
+                if (this.profiles.ContainsKey(currentProfileName))
+                {
+                    this.CurrentProfile = currentProfileName;
+                }
+                else
+                {
+                    CustomLogger.WriteLine(LogLevel.Warn, $"Current profile \"{currentProfileName}\" not found in loaded profiles.");
+                }
             }
         }
 
@@ -162,6 +179,20 @@ namespace Quest_Data_Builder.Initializer
         public MO2DataHandler() : this(null)
         {
 
+        }
+
+
+        public List<string>? GetFullGameFilePaths(string profileName)
+        {
+            if (this.profiles.TryGetValue(profileName, out ProfileData? profileData))
+            {
+                return FileLocator.ResolveFullFilePaths(profileData.Content, profileData.Data);
+            }
+            else
+            {
+                CustomLogger.WriteLine(LogLevel.Error, $"Profile \"{profileName}\" not found.");
+                return null;
+            }
         }
     }
 }
