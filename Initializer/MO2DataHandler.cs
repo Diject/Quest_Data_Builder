@@ -23,6 +23,7 @@ namespace Quest_Data_Builder.Initializer
         private readonly string? baseDirectory;
 
         public readonly string? MorrowindDirectory;
+        public readonly string? MorrowindDataDirectory;
         public string? CurrentProfile;
         public List<string> ProfileNames => profiles.Keys.ToList();
 
@@ -87,6 +88,13 @@ namespace Quest_Data_Builder.Initializer
                 return;
             }
 
+            this.MorrowindDataDirectory = Path.Combine(this.MorrowindDirectory, "Data Files");
+            if (!Directory.Exists(this.MorrowindDataDirectory))
+            {
+                CustomLogger.WriteLine(LogLevel.Error, "\"Data Files\" directory does not exist in Morrowind directory.");
+                return;
+            }
+
 
             if (!Directory.Exists(Path.Combine(this.baseDirectory, "profiles")))
             {
@@ -108,6 +116,7 @@ namespace Quest_Data_Builder.Initializer
             foreach (string profilePath in Directory.GetDirectories(profilesDirectory))
             {
                 ProfileData profileData = new(new(), new(), new());
+                profileData.Data.Add(this.MorrowindDataDirectory);
 
                 string profileName = Path.GetFileName(profilePath);
 
