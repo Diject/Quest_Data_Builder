@@ -214,6 +214,7 @@ namespace Quest_Data_Builder.Config
                 if (handlers.Count == 0)
                 {
                     CustomLogger.WriteLine(LogLevel.Error, "No valid data sources found for Morrowind files.");
+                    return false;
                 }
 
                 void WriteAvailableHandlers()
