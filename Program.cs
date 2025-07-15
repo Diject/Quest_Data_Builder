@@ -31,11 +31,12 @@ namespace Quest_Data_Builder
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             MainConfig.FileEncoding = Encoding.GetEncoding(1252);
 
+            bool isConfigFile = false;
             var options = Parser.Default.ParseArguments<Options>(args).WithParsed(options =>
             {
                 if (options.ConfigFile is not null)
                 {
-                    MainConfig.LoadConfiguration(options.ConfigFile);
+                    isConfigFile = MainConfig.LoadConfiguration(options.ConfigFile);
                 }
 
                 if (options.LogLevel is not null)
@@ -44,7 +45,7 @@ namespace Quest_Data_Builder
                 }
             });
 
-            if (!MainConfig.Initialize())
+            if (!MainConfig.Initialize(!isConfigFile))
             {
                 CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
                 return;
