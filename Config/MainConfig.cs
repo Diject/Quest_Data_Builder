@@ -47,6 +47,11 @@ namespace Quest_Data_Builder.Config
 
         public static string? MorrowindDirectory;
 
+        public static string? MO2BaseDirectory;
+
+        public static string? OMWopenmwCfgPath;
+        public static string? OMWlauncherCfgPath;
+
         public static List<string>? Files; // game files with full paths
 
         public static List<string>? GameFiles;
@@ -125,7 +130,7 @@ namespace Quest_Data_Builder.Config
                 }
 
 
-                var omwHandler = new OMWDataHandler();
+                var omwHandler = new OMWDataHandler(OMWlauncherCfgPath, OMWopenmwCfgPath);
                 if (omwHandler.IsValid)
                 {
                     var omwProfileName = omwHandler.CurrentProfile ?? omwHandler.ProfileNames.FirstOrDefault();
@@ -156,7 +161,7 @@ namespace Quest_Data_Builder.Config
                 }
 
 
-                var mo2Handler = new MO2DataHandler();
+                var mo2Handler = new MO2DataHandler(MO2BaseDirectory);
                 if (mo2Handler.IsValid)
                 {
                     var mo2ProfileName = mo2Handler.CurrentProfile ?? mo2Handler.ProfileNames.FirstOrDefault();
@@ -190,8 +195,8 @@ namespace Quest_Data_Builder.Config
             if (InitializerType == InitializerType.Manual)
             {
                 var mwBaseHandler = new MorrowindBaseDataHandler(MorrowindDirectory);
-                var omwHandler = new OMWDataHandler();
-                var mo2Handler = new MO2DataHandler();
+                var omwHandler = new OMWDataHandler(OMWlauncherCfgPath, OMWopenmwCfgPath); ;
+                var mo2Handler = new MO2DataHandler(MO2BaseDirectory);
 
                 List<(dynamic handler, string mesage)> handlers = new();
 
@@ -452,6 +457,21 @@ namespace Quest_Data_Builder.Config
                     "lua" => "lua",
                     _ => "json",
                 };
+            }
+
+            if ((object)configData.omwLauncherCfgPath is not null)
+            {
+                OMWlauncherCfgPath = (string)configData.omwlauncherCfgPath;
+            }
+
+            if ((object)configData.omwOpenmwCfgPath is not null)
+            {
+                OMWopenmwCfgPath = (string)configData.omwopenmwCfgPath;
+            }
+
+            if ((object)configData.mo2BaseDirectory is not null)
+            {
+                MO2BaseDirectory = (string)configData.mo2BaseDirectory;
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");
