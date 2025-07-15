@@ -37,6 +37,7 @@ namespace Quest_Data_Builder.Initializer
 
             if (!string.IsNullOrEmpty(baseDirectory))
             {
+                baseDirectory = FileLocator.ExpandPath(baseDirectory);
                 this.baseDirectory = baseDirectory;
             }
 

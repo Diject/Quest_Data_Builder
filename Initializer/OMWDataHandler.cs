@@ -117,13 +117,13 @@ namespace Quest_Data_Builder.Initializer
             }
             else if (OperatingSystem.IsLinux())
             {
-                string? configHomePath = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME")
-                    ?? Environment.ExpandEnvironmentVariables("$HOME/.config");
+                string? configHomePath = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") ?? "$HOME/.config";
                 if (string.IsNullOrEmpty(configHomePath))
                 {
                     CustomLogger.WriteLine(LogLevel.Warn, "XDG_CONFIG_HOME environment variable not found.");
                     return null;
                 }
+                configHomePath = FileLocator.ExpandPath(configHomePath);
                 string configDirPath = Path.Combine(configHomePath, "openmw");
                 if (!Directory.Exists(configDirPath))
                 {

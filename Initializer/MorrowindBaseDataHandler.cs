@@ -22,6 +22,7 @@ namespace Quest_Data_Builder.Initializer
         {
             if (!string.IsNullOrEmpty(morrowindDirectory))
             {
+                morrowindDirectory = FileLocator.ExpandPath(morrowindDirectory);
                 if (Directory.Exists(morrowindDirectory))
                 {
                     MorrowindDirectory = morrowindDirectory;

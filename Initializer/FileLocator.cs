@@ -26,5 +26,29 @@ namespace Quest_Data_Builder.Initializer
             }
             return res;
         }
+
+
+        public static string ExpandPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return path;
+
+            if (path.StartsWith("~"))
+            {
+                var home = Environment.GetEnvironmentVariable("HOME") ??
+                           Environment.GetEnvironmentVariable("USERPROFILE");
+                if (home != null)
+                    path = home + path.Substring(1);
+            }
+
+            path = System.Text.RegularExpressions.Regex.Replace(
+                path,
+                @"\$(\w+)",
+                m => Environment.GetEnvironmentVariable(m.Groups[1].Value) ?? m.Value
+            );
+
+            path = Environment.ExpandEnvironmentVariables(path);
+
+            return path;
+        }
     }
 }
