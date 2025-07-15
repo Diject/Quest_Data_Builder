@@ -283,6 +283,11 @@ namespace Quest_Data_Builder.Initializer
                 }
             }
 
+            foreach (var profileName in this.profilesData.Keys)
+            {
+                CustomLogger.WriteLine(LogLevel.Text, $"OpenMW profile \"{profileName}\" data loaded successfully.");
+            }
+
             return true;
         }
 

@@ -166,7 +166,7 @@ namespace Quest_Data_Builder.Initializer
 
 
                 this.profiles.Add(profileName, profileData);
-                CustomLogger.WriteLine(LogLevel.Text, $"MO2 data for profile \"{profileName}\" loaded successfully.");
+                CustomLogger.WriteLine(LogLevel.Text, $"MO2 profile \"{profileName}\" data loaded successfully.");
             }
 
 
