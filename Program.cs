@@ -54,9 +54,9 @@ namespace Quest_Data_Builder
 
             foreach (var filePath in MainConfig.Files!)
             {
-                if (Path.GetExtension(Path.GetFileName(filePath)) != ".esp" &&
-                    Path.GetExtension(Path.GetFileName(filePath)) != ".esm" &&
-                    Path.GetExtension(Path.GetFileName(filePath)) != ".omwaddon")
+                if (Path.GetExtension(Path.GetFileName(filePath))?.ToLower() != ".esp" &&
+                    Path.GetExtension(Path.GetFileName(filePath)).ToLower() != ".esm" &&
+                    Path.GetExtension(Path.GetFileName(filePath)).ToLower() != ".omwaddon")
                 {
                     CustomLogger.WriteLine(LogLevel.Warn, $"skipping file \"{filePath}\", not a valid data file");
                     continue;
