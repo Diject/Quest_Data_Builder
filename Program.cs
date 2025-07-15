@@ -146,6 +146,11 @@ namespace Quest_Data_Builder
             }
 
             CustomLogger.WriteLine(LogLevel.Text, $"\nCompleted with {CustomLogger.Errors.Count} errors");
+            if (MainConfig.InitializerType != InitializerType.ConfigFile)
+            {
+                CustomLogger.WriteLine(LogLevel.Text, $"You can find the output files in \"{Path.GetFullPath(MainConfig.OutputDirectory)}\"");
+                Console.ReadLine();
+            }
         }
 
         public class Options
