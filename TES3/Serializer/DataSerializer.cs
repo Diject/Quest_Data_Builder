@@ -406,7 +406,15 @@ namespace Quest_Data_Builder.TES3.Serializer
                     }
 
                     objectTable.Add("total", objectItem.Value.TotalCount);
-                    objectTable.Add("norm", Math.Round((decimal)(objPos.Count + normalized), 2));
+                    if (_type == SerializerType.Lua)
+                    {
+                        objectTable.Add("norm", Math.Round((objPos.Count + normalized), 2));
+                    }
+                    else
+                    {
+                        objectTable.Add("norm", Math.Round((decimal)(objPos.Count + normalized), 2));
+                    }
+                    
 
                     objectTable.Add("positions", objPosArray);
                 }
@@ -419,7 +427,14 @@ namespace Quest_Data_Builder.TES3.Serializer
                         normalized += itemCount.Count * itemCount.Chance;
 
                     objectTable.Add("total", (int)Math.Round(objectItem.Value.TotalCount + normalized));
-                    objectTable.Add("norm", Math.Round((decimal)normalized, 2));
+                    if (_type == SerializerType.Lua)
+                    {
+                        objectTable.Add("norm", Math.Round(normalized, 2));
+                    }
+                    else
+                    {
+                        objectTable.Add("norm", Math.Round((decimal)normalized, 2));
+                    }
                 }
 
                 if (objectItem.Value.Contains.Count > 0)
@@ -432,7 +447,14 @@ namespace Quest_Data_Builder.TES3.Serializer
                     {
                         var arr = newArray();
                         arr.Add(tuple.Item1.ToLower());
-                        arr.Add(tuple.Item2);
+                        if (_type == SerializerType.Lua)
+                        {
+                            arr.Add((double)tuple.Item2);
+                        }
+                        else
+                        {
+                            arr.Add(tuple.Item2);
+                        }
                         containedArray.Add(arr);
                     }
 
@@ -449,7 +471,14 @@ namespace Quest_Data_Builder.TES3.Serializer
                     {
                         var arr = newArray();
                         arr.Add(tuple.Item1.ToLower());
-                        arr.Add(tuple.Item2);
+                        if (_type == SerializerType.Lua)
+                        {
+                            arr.Add((double)tuple.Item2);
+                        }
+                        else
+                        {
+                            arr.Add(tuple.Item2);
+                        }
                         containedArray.Add(arr);
                     }
 
