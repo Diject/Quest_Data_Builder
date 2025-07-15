@@ -88,13 +88,18 @@ namespace Quest_Data_Builder
 
             try
             {
+                CustomLogger.WriteLine(LogLevel.Text, $"Merging {recordData.Count} data files");
                 for (int i = 1; i < recordData.Count; i++)
                 {
                     var data = recordData[i];
 
                     recordData[0].Merge(data);
                 }
+
+                CustomLogger.WriteLine(LogLevel.Text, "Removing deleted records");
                 recordData[0].RemoveDeletedRecords();
+
+                CustomLogger.WriteLine(LogLevel.Text, "Adding leveled lists items to object records");
                 recordData[0].AddItemsFromLeveledListsToObjects();
             }
             catch (Exception ex)
@@ -127,6 +132,9 @@ namespace Quest_Data_Builder
             try
             {
                 Directory.CreateDirectory(MainConfig.OutputDirectory);
+
+                CustomLogger.WriteLine(LogLevel.Text, $"Writing data to \"{Path.GetFullPath(MainConfig.OutputDirectory)}\"");
+
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests." + MainConfig.OutputFileFormat]), jsonSer.QuestData(), MainConfig.FileEncoding);
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText." + MainConfig.OutputFileFormat]), jsonSer.QuestByTopicText(), MainConfig.FileEncoding);
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects." + MainConfig.OutputFileFormat]), jsonSer.QuestObjects(), MainConfig.FileEncoding);
