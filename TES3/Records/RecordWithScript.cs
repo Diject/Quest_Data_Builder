@@ -26,7 +26,7 @@ namespace Quest_Data_Builder.TES3.Records
 
             IsDeleted = this.RecordInfo.Deleted;
 
-            CustomLogger.WriteLine(LogLevel.Info, $"record {this.RecordInfo.Position}");
+            CustomLogger.WriteLine(LogLevel.Misc, $"record {this.RecordInfo.Position}");
 
             Type = this.RecordInfo.Type;
 
@@ -37,13 +37,12 @@ namespace Quest_Data_Builder.TES3.Records
                     string field = reader.ReadString(4);
                     int length = reader.ReadInt32();
 
-                    CustomLogger.WriteLine(LogLevel.Misc, $"field {field} length {length}");
-
                     switch (field)
                     {
                         case "NAME":
                             {
                                 Id = reader.ReadNullTerminatedString(length);
+                                CustomLogger.WriteLine(LogLevel.Misc, $"ID {Id}");
                                 break;
                             }
                         case "SCRI":

@@ -62,7 +62,7 @@ namespace Quest_Data_Builder.TES3.Records
             Parent = parent;
             IsDeleted = this.RecordInfo.Deleted;
 
-            CustomLogger.WriteLine(LogLevel.Info, $"topic record {RecordInfo.Position}");
+            CustomLogger.WriteLine(LogLevel.Misc, $"topic record {RecordInfo.Position}");
 
             using (var reader = new BetterBinaryReader(new MemoryStream(RecordInfo.Data!)))
             {
@@ -71,14 +71,12 @@ namespace Quest_Data_Builder.TES3.Records
                     string field = reader.ReadString(4);
                     int length = reader.ReadInt32();
 
-                    CustomLogger.WriteLine(LogLevel.Misc, $"field {field} length {length}");
-
                     switch (field)
                     {
                         case "INAM":
                             {
                                 Id = reader.ReadNullTerminatedString(length);
-                                CustomLogger.WriteLine(LogLevel.Info, $"ID {Id}");
+                                CustomLogger.WriteLine(LogLevel.Misc, $"ID {Id}");
                                 break;
                             }
                         case "PNAM":

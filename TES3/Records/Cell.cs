@@ -51,7 +51,7 @@ namespace Quest_Data_Builder.TES3.Records
 
             if (this.RecordInfo.Data is null) throw new Exception("cell record data is null");
 
-            CustomLogger.WriteLine(LogLevel.Info, $"cell record {this.RecordInfo.Position}");
+            CustomLogger.WriteLine(LogLevel.Misc, $"cell record {this.RecordInfo.Position}");
 
             using (var reader = new BetterBinaryReader(new MemoryStream(this.RecordInfo.Data)))
             {
@@ -62,8 +62,6 @@ namespace Quest_Data_Builder.TES3.Records
                     string field = reader.ReadString(4);
                     int length = reader.ReadInt32();
 
-                    CustomLogger.WriteLine(LogLevel.Misc, $"field {field} length {length}");
-
                     switch (field)
                     {
                         case "NAME":
@@ -71,7 +69,7 @@ namespace Quest_Data_Builder.TES3.Records
                                 if (!foundDataLabel)
                                 {
                                     Name = reader.ReadNullTerminatedString(length);
-                                    CustomLogger.WriteLine(LogLevel.Info, $"ID {Name}");
+                                    CustomLogger.WriteLine(LogLevel.Misc, $"ID {Name}");
                                     foundDataLabel = false;
                                 }
                                 else

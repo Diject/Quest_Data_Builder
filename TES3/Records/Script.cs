@@ -36,7 +36,7 @@ namespace Quest_Data_Builder.TES3.Records
 
             if (this.RecordInfo.Data is null) throw new Exception("record data is null");
 
-            CustomLogger.WriteLine(LogLevel.Info, $"script record {this.RecordInfo.Position}");
+            CustomLogger.WriteLine(LogLevel.Misc, $"script record {this.RecordInfo.Position}");
 
             using (var reader = new BetterBinaryReader(new MemoryStream(this.RecordInfo.Data)))
             {
@@ -46,14 +46,12 @@ namespace Quest_Data_Builder.TES3.Records
                     int length = reader.ReadInt32();
                     long end = reader.Position + length;
 
-                    CustomLogger.WriteLine(LogLevel.Misc, $"field {field} length {length}");
-
                     switch (field)
                     {
                         case "SCHD":
                             {
                                 Id = reader.ReadString(32).TrimEnd('\0');
-                                CustomLogger.WriteLine(LogLevel.Info, $"Name {Id}");
+                                CustomLogger.WriteLine(LogLevel.Misc, $"Name {Id}");
                                 NumShorts = reader.ReadUInt32();
                                 NumLongs = reader.ReadUInt32();
                                 NumFloats = reader.ReadUInt32();
