@@ -166,6 +166,7 @@ namespace Quest_Data_Builder
             if (MainConfig.InitializerType != InitializerType.ConfigFile)
             {
                 CustomLogger.WriteLine(LogLevel.Text, $"You can find the output files in \"{Path.GetFullPath(MainConfig.OutputDirectory)}\"");
+                CustomLogger.WriteLine(LogLevel.Text, "Press enter to exit.");
                 Console.ReadLine();
             }
         }
