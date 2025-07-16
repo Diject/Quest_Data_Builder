@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.Logger
@@ -24,6 +25,10 @@ namespace Quest_Data_Builder.Logger
 
         public static ConcurrentBag<Exception> Errors { get; set; } = new();
 
+        private static readonly ConcurrentQueue<string> _logQueue = new();
+        private static readonly CancellationTokenSource _cts = new();
+        private static readonly Task _logWriterTask = Task.Run(() => LogWriterLoop(_cts.Token));
+
         public static void WriteLine(LogLevel level, string str)
         {
             if (Level >= level)
@@ -33,9 +38,21 @@ namespace Quest_Data_Builder.Logger
                 {
                     foreach (var line in str.Split('\n'))
                     {
-                        File.AppendAllText("log.txt", $"{DateTime.Now}: [{level}] {line}\n");
+                        _logQueue.Enqueue($"{DateTime.Now}: [{level}] {line}\n");
                     }
                 }
+            }
+        }
+
+        private static void LogWriterLoop(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                while (_logQueue.TryDequeue(out var logLine))
+                {
+                    File.AppendAllText("log.txt", logLine);
+                }
+                Thread.Sleep(100);
             }
         }
 
@@ -55,6 +72,17 @@ namespace Quest_Data_Builder.Logger
         public static void RegisterErrorException(Exception exception)
         {
             Errors.Add(exception);
+        }
+
+        public static void Shutdown()
+        {
+            _cts.Cancel();
+            _logWriterTask.Wait();
+
+            while (_logQueue.TryDequeue(out var logLine))
+            {
+                File.AppendAllText("log.txt", logLine);
+            }
         }
     }
 }

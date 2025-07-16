@@ -170,6 +170,7 @@ namespace Quest_Data_Builder
                 CustomLogger.WriteLine(LogLevel.Text, "Press enter to exit.");
                 Console.ReadLine();
             }
+            CustomLogger.Shutdown();
         }
 
         public class Options
