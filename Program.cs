@@ -26,7 +26,8 @@ namespace Quest_Data_Builder
     {
         static void Main(string[] args)
         {
-            CustomLogger.Level = LogLevel.Warn;
+            if (CustomLogger.LogToFile)
+                CustomLogger.ClearLogFile();
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             MainConfig.FileEncoding = Encoding.GetEncoding(1252);
@@ -34,6 +35,13 @@ namespace Quest_Data_Builder
             bool isConfigFile = false;
             var options = Parser.Default.ParseArguments<Options>(args).WithParsed(options =>
             {
+                if (options.LogToFile is not null)
+                {
+                    CustomLogger.LogToFile = (bool)options.LogToFile;
+                    if (CustomLogger.LogToFile)
+                        CustomLogger.ClearLogFile();
+                }
+
                 if (options.ConfigFile is not null)
                 {
                     isConfigFile = MainConfig.LoadConfiguration(options.ConfigFile);
@@ -166,6 +174,9 @@ namespace Quest_Data_Builder
         {
             [Option('l', "logLevel", Required = false, HelpText = "Log level. From 0 to 3.")]
             public uint? LogLevel { get; set; }
+
+            [Option('L', "logToFile", Required = false, HelpText = "Log to file")]
+            public bool? LogToFile { get; set; }
 
             [Option('c', "configFile", Required = false, HelpText = "Input config file with required data.")]
             public string? ConfigFile { get; set; }

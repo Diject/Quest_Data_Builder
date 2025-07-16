@@ -415,6 +415,13 @@ namespace Quest_Data_Builder.Config
                 return false;
             }
 
+            if ((object)configData.logToFile is not null && CustomLogger.LogToFile != (bool)configData.logToFile)
+            {
+                CustomLogger.LogToFile = (bool)configData.logToFile;
+                if (CustomLogger.LogToFile)
+                    CustomLogger.ClearLogFile();
+            }
+
             if ((object)configData.logLevel is not null)
             {
                 LogLevel = (LogLevel)configData.logLevel;
