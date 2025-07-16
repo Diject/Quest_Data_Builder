@@ -182,8 +182,5 @@ namespace Quest_Data_Builder
             [Option('c', "configFile", Required = false, HelpText = "Input config file with required data.")]
             public string? ConfigFile { get; set; }
         }
-
-        [GeneratedRegex(@"^ *GameFile(\d+) *= *(.+?)[ ;\\t]*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
-        private static partial Regex DataFileRegex();
     }
 }
