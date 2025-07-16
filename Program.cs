@@ -118,6 +118,7 @@ namespace Quest_Data_Builder
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
             }
 
+            CustomLogger.WriteLine(LogLevel.Text, "Processing quest data");
             var dataProcessor = new QuestDataHandler(recordData[0]);
 
             if (CustomLogger.Level >= LogLevel.Info)
