@@ -20,6 +20,7 @@ namespace Quest_Data_Builder.TES3.Script
         Begin = 1,
         If = 2,
         While = 3,
+        Dialog = 4,
     }
 
     internal partial class ScriptBlock
@@ -68,6 +69,7 @@ namespace Quest_Data_Builder.TES3.Script
 
         private static readonly Dictionary<string, (ScriptBlockType type, string endLabel, HashSet<string> altLabels)> startLabels1 = new(StringComparer.OrdinalIgnoreCase) {
             {"begin", new(ScriptBlockType.Begin, "end", new())},
+            {"_dialog_", new(ScriptBlockType.Dialog, "end", new())},
             {"if", new(ScriptBlockType.If,"endif", new(StringComparer.OrdinalIgnoreCase) {"else", "elseif"})},
             {"while", new(ScriptBlockType.While,"endwhile", new())}
         };
@@ -258,7 +260,7 @@ namespace Quest_Data_Builder.TES3.Script
             return match.Success;
         }
 
-        [GeneratedRegex("^[ \\t]*(begin|if|elseif|else|while|endif|endwhile|end)[ (\"]*(.*?)[ )\"\\t]*$", RegexOptions.IgnoreCase)]
+        [GeneratedRegex("^[ \\t]*(begin|if|elseif|else|while|endif|endwhile|end|_dialog_)[ (\"]*(.*?)[ )\"\\t]*$", RegexOptions.IgnoreCase)]
         private static partial Regex BlockLabelRegex();
 
 
@@ -274,31 +276,23 @@ namespace Quest_Data_Builder.TES3.Script
 
         private void findVariables()
         {
-            if (this.ContainsBlocksWithLocalVariables(out var varBlocks))
+            if (this.FindSetFunction(out var varResults))
             {
-                foreach (var block in varBlocks)
+                foreach (var result in varResults)
                 {
-                    if (block.Parent is null) continue;
+                    var varName = result.ReturnValues[1]?.Value;
+                    var res = result.ReturnValues[2]?.Value.Trim();
+                    if (res == null || varName == null) continue;
 
-                    if (block.Parent.FindSetFunction(out var varResults))
-                    {
-                        foreach (var result in varResults)
-                        {
-                            var varName = result.ReturnValues[1]?.Value;
-                            var res = result.ReturnValues[2]?.Value.Trim();
-                            if (res == null || varName == null) continue;
+                    ScriptVariable variable = new(varName, this.ScriptId ?? "", res, result.Requirements);
 
-                            ScriptVariable variable = new(varName, block.ScriptId ?? "", res, result.Requirements);
-
-                            var head = this.GetHead();
-                            head!.VariableData ??= new(StringComparer.OrdinalIgnoreCase);
-                            head!.VariableData.TryAdd(varName, new());
-                            var variableList = head!.VariableData[varName];
-                            bool isLocal = head!.LocalVariables is not null && head!.LocalVariables.ContainsKey(varName);
-                            variableList.Type = isLocal ? ScriptVariableType.Local : ScriptVariableType.Global;
-                            variableList.Add(variable);
-                        }
-                    }
+                    var head = this.GetHead();
+                    head!.VariableData ??= new(StringComparer.OrdinalIgnoreCase);
+                    head!.VariableData.TryAdd(varName, new());
+                    var variableList = head!.VariableData[varName];
+                    bool isLocal = head!.LocalVariables is not null && head!.LocalVariables.ContainsKey(varName);
+                    variableList.Type = isLocal ? ScriptVariableType.Local : ScriptVariableType.Global;
+                    variableList.Add(variable);
                 }
             }
         }
@@ -341,6 +335,24 @@ namespace Quest_Data_Builder.TES3.Script
             }
 
             return null;
+        }
+
+
+        /// <summary>
+        /// Returns all script blocks in the script, including nested blocks.
+        /// </summary>
+        public List<ScriptBlock> GetScriptBlocks()
+        {
+            List<ScriptBlock> ret = new();
+
+            ret.Add(this);
+
+            foreach (var block in this.innerBlocks)
+            {
+                ret.AddRange(block.GetScriptBlocks());
+            }
+
+            return ret;
         }
 
 
@@ -612,6 +624,24 @@ namespace Quest_Data_Builder.TES3.Script
 
                     ret = true;
                 }
+            }
+            return ret;
+        }
+
+
+        /// <summary>
+        /// Returns all requirements from this block and all parent blocks.
+        /// </summary>
+        public QuestRequirementList GetRequirements()
+        {
+            var ret = new QuestRequirementList();
+            if (this._requirements is not null)
+            {
+                ret.AddRange(this._requirements);
+            }
+            if (this.Parent is not null)
+            {
+                ret.AddRange(this.Parent.GetRequirements());
             }
             return ret;
         }
