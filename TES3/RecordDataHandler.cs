@@ -27,6 +27,7 @@ namespace Quest_Data_Builder.TES3
         public Dictionary<string, RecordWithScript> RecordsWithScript = new(StringComparer.OrdinalIgnoreCase);
         public LeveledItemHandler LeveledItems = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, LeveledCreature> LeveledCreatures = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, GlobalVariableRecord> GlobalVariables = new(StringComparer.OrdinalIgnoreCase);
 
         public RecordDataHandler(TES3DataFile master)
         {
@@ -95,6 +96,13 @@ namespace Quest_Data_Builder.TES3
                 {
                     var record = new LeveledCreature(recordData);
                     this.LeveledCreatures.TryAdd(record.Id, record);
+                }
+
+            if (master.Records.ContainsKey(RecordType.GlobalVariable))
+                foreach (var recordData in master.Records[RecordType.GlobalVariable])
+                {
+                    var record = new GlobalVariableRecord(recordData);
+                    this.GlobalVariables.TryAdd(record.Name, record);
                 }
         }
 
@@ -305,6 +313,18 @@ namespace Quest_Data_Builder.TES3
                 else
                 {
                     this.LeveledCreatures.Add(newItem.Key, newItem.Value);
+                }
+            }
+
+            foreach (var newItem in newHandler.GlobalVariables)
+            {
+                if (this.GlobalVariables.TryGetValue(newItem.Key, out var record))
+                {
+                    record.Merge(newItem.Value);
+                }
+                else
+                {
+                    this.GlobalVariables.TryAdd(newItem.Key, newItem.Value);
                 }
             }
         }

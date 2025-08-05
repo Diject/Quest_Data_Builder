@@ -17,5 +17,6 @@ namespace Quest_Data_Builder.TES3.Records
         public const string Container = "CONT";
         public const string LeveledItem = "LEVI";
         public const string LeveledCreature = "LEVC";
+        public const string GlobalVariable = "GLOB";
     }
 }
