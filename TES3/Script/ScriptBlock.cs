@@ -92,6 +92,23 @@ namespace Quest_Data_Builder.TES3.Script
             findVariables();
         }
 
+        public ScriptBlock(string scriptText, TopicRecord topic)
+        {
+            text = scriptText;
+            Id = id;
+
+            parseScriptText(text);
+
+            var diaRequirement = new QuestRequirement();
+            diaRequirement.Type = RequirementType.CustomDialogue;
+            if (topic.Parent is not null)
+                diaRequirement.Variable = Consts.DialoguePrefix + topic.Parent.Id;
+            diaRequirement.ValueStr = topic.Id;
+            this.AddRequirement(diaRequirement);
+
+            findVariables();
+        }
+
         public ScriptBlock(ScriptBlock parent, string scriptText)
         {
             text = scriptText;

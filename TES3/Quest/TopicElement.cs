@@ -25,7 +25,7 @@ namespace Quest_Data_Builder.TES3.Quest
 
             if (topic.Result is not null)
             {
-                this.ScriptBlock = new ScriptBlock("_dialog_\n" + topic.Result + "\nend");
+                this.ScriptBlock = new ScriptBlock("_dialog_\n" + topic.Result + "\nend", topic);
                 this.ScriptBlock.AddRequirements(this.Requirements);
             }
         }

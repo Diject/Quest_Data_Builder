@@ -238,7 +238,6 @@ namespace Quest_Data_Builder.TES3
                             if (this.Topics.TryGetValue(((TopicRecord?)element.Record!).Id, out var topic))
                             {
                                 scriptBlock = topic.ScriptBlock;
-                                stage.AddRequirements(topic.Requirements);
                             }
 
                         }
