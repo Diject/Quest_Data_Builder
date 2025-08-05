@@ -18,8 +18,6 @@ namespace Quest_Data_Builder.TES3.Quest
         public uint? Index { get { return Topic.Index; } }
         public string? QuestId { get { return Topic.Parent?.Id; } }
 
-        public TopicRequirements? Requirements { get; private set; }
-
         public QuestContainingElement(TopicRecord itemWithQuestInfo, TopicRecord questTopic)
         {
             if (itemWithQuestInfo.Parent?.Type == DialogType.Journal)
@@ -28,7 +26,6 @@ namespace Quest_Data_Builder.TES3.Quest
             Record = itemWithQuestInfo;
             Type = RecordType.Topic;
             Topic = questTopic;
-            Requirements = new(itemWithQuestInfo);
             Id = itemWithQuestInfo.Id;
         }
 

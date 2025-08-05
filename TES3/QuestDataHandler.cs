@@ -18,6 +18,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 
 namespace Quest_Data_Builder.TES3
@@ -57,6 +58,11 @@ namespace Quest_Data_Builder.TES3
         public Dictionary<string, ScriptData> ScriptDataById = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
+        /// List of topics. By topic id
+        /// </summary>
+        public ConcurrentDictionary<string, TopicElement> Topics = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Contains data about local variables in scripts or on objects. By script or object id; by variable name
         /// </summary>
         public ScriptVariables VariablesByScriptId = new(StringComparer.OrdinalIgnoreCase);
@@ -75,6 +81,7 @@ namespace Quest_Data_Builder.TES3
 
             try
             {
+                this.fillData();
                 this.findQuestContainingElements();
 
                 // the order should stay the same
@@ -224,28 +231,30 @@ namespace Quest_Data_Builder.TES3
 
                     foreach (var element in dialogData[stage.Index])
                     {
-                        ScriptBlock scriptBlock;
+                        ScriptBlock? scriptBlock = null;
 
                         if (element.Type == RecordType.Topic)
                         {
-                            stage.AddRequirements(element.Requirements);
+                            if (this.Topics.TryGetValue(((TopicRecord?)element.Record!).Id, out var topic))
+                            {
+                                scriptBlock = topic.ScriptBlock;
+                                stage.AddRequirements(topic.Requirements);
+                            }
 
-                            scriptBlock = new ScriptBlock(((TopicRecord?)element.Record!).Result ?? "");
                         }
                         else if (element.Type == RecordType.Script)
                         {
-                            var scriptText = ((ScriptRecord?)element.Record!).Text!;
-                            var scriptData = new ScriptData((ScriptRecord?)element.Record!, scriptText);
-
-                            scriptData.BlockData.UpdateToIncludeStartScriptData(dataHandler, this);
-                            this.ScriptDataById.TryAdd(scriptData.Id, scriptData);
-
-                            scriptBlock = scriptData.BlockData;
+                            if (this.ScriptDataById.TryGetValue(((ScriptRecord?)element.Record)!.Id, out var scriptData))
+                            {
+                                scriptBlock = scriptData.BlockData;
+                            }
                         }
                         else
                         {
                             continue;
                         }
+
+                        if (scriptBlock is null) continue;
 
                         // find journal functions in the script block that represent the script
                         if (scriptBlock.FindJournalFunction(element.QuestId, stage.Index.ToString(), out var journalResults))
@@ -805,6 +814,27 @@ namespace Quest_Data_Builder.TES3
                 }
             }
         }
-    }
 
+
+        private void fillData()
+        {
+            foreach (var script in this.dataHandler.Scripts.Values)
+            {
+                if (script.Text is null) continue;
+
+                var scriptData = new ScriptData(script, script.Text);
+
+                scriptData.BlockData.UpdateToIncludeStartScriptData(dataHandler, this);
+                this.ScriptDataById.TryAdd(scriptData.Id, scriptData);
+            }
+
+            foreach (var dialog in this.dataHandler.Dialogs.Values)
+            {
+                foreach (var topic in dialog.Topics)
+                {
+                    this.Topics.TryAdd(topic.Id, new(topic));
+                }
+            }
+        }
+    }
 }

@@ -1,6 +1,7 @@
 ﻿using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Script;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Quest_Data_Builder.TES3.Quest
 {
-    internal partial class TopicRequirements : List<QuestRequirement>
+    internal partial class TopicRequirements : ConcurrentBag<QuestRequirement>
     {
         public TopicRequirements(TopicRecord topic)
         {
