@@ -63,6 +63,28 @@ namespace Quest_Data_Builder
 
             foreach (var filePath in MainConfig.Files!)
             {
+
+                try
+                {
+                    if (MainConfig.IgnoredDataFilePatterns is not null)
+                    {
+                        foreach (var ignoredFile in MainConfig.IgnoredDataFilePatterns)
+                        {
+                            if (Regex.Match(filePath, ignoredFile, RegexOptions.IgnoreCase).Success)
+                            {
+                                CustomLogger.WriteLine(LogLevel.Text, $"skipping file \"{filePath}\", ignored by config");
+                                continue;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    CustomLogger.RegisterErrorException(ex);
+                    CustomLogger.WriteLine(LogLevel.Error, "Error: failed to process ignored files");
+                    CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+                }
+
                 if (Path.GetExtension(Path.GetFileName(filePath))?.ToLower() != ".esp" &&
                     Path.GetExtension(Path.GetFileName(filePath)).ToLower() != ".esm" &&
                     Path.GetExtension(Path.GetFileName(filePath)).ToLower() != ".omwaddon")

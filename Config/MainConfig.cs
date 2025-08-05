@@ -69,6 +69,8 @@ namespace Quest_Data_Builder.Config
 
         public static int RoundFractionalDigits = 3;
 
+        public static List<string>? IgnoredDataFilePatterns;
+
         /// <summary>
         /// Number of steps in a quest to be considered a quest that an object can start(give)
         /// </summary>
@@ -376,6 +378,26 @@ namespace Quest_Data_Builder.Config
 
 
 
+        private static List<string> GetConfigListData(object data, string extension)
+        {
+            List<string> res = new();
+            if (extension == "json")
+            {
+                Newtonsoft.Json.Linq.JArray ignoredFiles = (Newtonsoft.Json.Linq.JArray)data;
+                for (int i = 0; i < ignoredFiles.Count; i++)
+                {
+                    res.Add(ignoredFiles.ElementAt(i).ToString());
+                }
+            }
+            else if (extension == "yaml" && data is string[] yamlArray)
+            {
+                res.AddRange(yamlArray);
+            }
+            return res;
+        }
+
+
+
         public static bool LoadConfiguration(string filename)
         {
             CustomLogger.WriteLine(LogLevel.Info, "Loading configuration file: " + filename);
@@ -486,13 +508,7 @@ namespace Quest_Data_Builder.Config
 
             if ((object)configData.gameFiles is not null)
             {
-                var outGameFileList = new List<string>();
-                Newtonsoft.Json.Linq.JArray gameFiles = (Newtonsoft.Json.Linq.JArray)configData.gameFiles;
-                for (int i = 0; i < gameFiles.Count; i++)
-                {
-                    outGameFileList.Add(gameFiles.ElementAt(i).ToString());
-                }
-                GameFiles = outGameFileList;
+                GameFiles = GetConfigListData((object)configData.gameFiles, extension!);
             }
 
             if (configData.outputFormat is not null)
@@ -524,6 +540,11 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.mo2BaseDirectory is not null)
             {
                 MO2BaseDirectory = (string)configData.mo2BaseDirectory;
+            }
+
+            if ((object)configData.ignoredDataFilePatterns is not null)
+            {
+                IgnoredDataFilePatterns = GetConfigListData((object)configData.ignoredDataFilePatterns, extension!);
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");
