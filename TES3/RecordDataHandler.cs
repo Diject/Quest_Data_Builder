@@ -295,6 +295,18 @@ namespace Quest_Data_Builder.TES3
                     this.LeveledItems.Add(newItem.Key, newItem.Value);
                 }
             }
+
+            foreach (var newItem in newHandler.LeveledCreatures)
+            {
+                if (this.LeveledCreatures.TryGetValue(newItem.Key, out var record))
+                {
+                    record.Merge(newItem.Value);
+                }
+                else
+                {
+                    this.LeveledCreatures.Add(newItem.Key, newItem.Value);
+                }
+            }
         }
 
         public void RemoveDeletedRecords()

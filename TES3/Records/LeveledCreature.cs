@@ -13,9 +13,9 @@ namespace Quest_Data_Builder.TES3.Records
     {
         public readonly string Type = RecordType.LeveledCreature;
         public readonly string Id = "";
-        public readonly uint Data;
-        public readonly byte ChanceNone;
-        public readonly uint? Count;
+        public uint Data { get; private set; }
+        public byte ChanceNone { get; private set; }
+        public uint? Count { get; private set; }
         public readonly HashSet<string> Creatures = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
@@ -116,14 +116,22 @@ namespace Quest_Data_Builder.TES3.Records
             }
         }
 
-        public void Merge(LeveledItem newRecord)
+        public void Merge(LeveledCreature newRecord)
         {
             this.IsDeleted |= newRecord.IsDeleted;
             this.Creatures.Clear();
-            foreach (var item in newRecord.CarriedItems)
+            foreach (var item in newRecord.Creatures)
             {
                 this.Creatures.Add(item);
             }
+            this.Items.Clear();
+            foreach (var item in newRecord.Items)
+            {
+                this.Items.Add(item);
+            }
+            this.Data = newRecord.Data;
+            this.ChanceNone = newRecord.ChanceNone;
+            this.Count = newRecord.Count;
         }
     }
 }
