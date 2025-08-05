@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -396,6 +397,12 @@ namespace Quest_Data_Builder.Config
             {
                 CustomLogger.WriteLine(LogLevel.Error, "Error: Failed to load configuration file.\n" + e.Message);
                 return false;
+            }
+
+            if (String.Equals(extension, ".json", StringComparison.OrdinalIgnoreCase))
+            {
+                text = Regex.Replace(text, @"/\*.*?\*/", string.Empty, RegexOptions.Singleline);
+                text = Regex.Replace(text, @"//.*(?=\r?\n)", string.Empty);
             }
 
             var yamlDeserializer = new DeserializerBuilder()
