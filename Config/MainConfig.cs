@@ -471,9 +471,9 @@ namespace Quest_Data_Builder.Config
                 FileEncoding = Encoding.GetEncoding((int)configData.encoding);
             }
 
-            if ((object)configData.maxPos is not null)
+            if ((object)configData.maxObjectPositions is not null)
             {
-                MaxObjectPositions = (int)configData.maxPos;
+                MaxObjectPositions = (int)configData.maxObjectPositions;
             }
 
             if ((object)configData.removeUnused is not null)
