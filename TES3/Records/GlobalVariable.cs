@@ -11,8 +11,8 @@ namespace Quest_Data_Builder.TES3.Records
 {
     internal class GlobalVariableRecord : Record
     {
-        public string Name { get; private set; }
-        public string Type { get; private set; }
+        public string Name { get; private set; } = "";
+        public string Type { get; private set; } = "";
         public float FLTV { get; private set; }
 
         public int? IntValue = null;

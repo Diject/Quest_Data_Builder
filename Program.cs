@@ -53,27 +53,49 @@ namespace Quest_Data_Builder
                 }
             });
 
-            if (!MainConfig.Initialize(!isConfigFile))
+            try
             {
+                if (!MainConfig.Initialize(!isConfigFile))
+                {
+                    CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
+                    CustomLogger.Shutdown();
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                CustomLogger.RegisterErrorException(ex);
                 CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
+                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+                CustomLogger.Shutdown();
                 return;
             }
+
 
             var recordData = new List<RecordDataHandler>();
 
             foreach (var filePath in MainConfig.Files!)
             {
+                if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                {
+                    string exceptionMessage = $"Error: file \"{filePath}\" does not exist";
+                    CustomLogger.RegisterErrorException(new Exception(exceptionMessage));
+                    CustomLogger.WriteLine(LogLevel.Error, exceptionMessage);
+                    continue;
+                }
 
+                bool ignored = false;
                 try
                 {
                     if (MainConfig.IgnoredDataFilePatterns is not null)
                     {
-                        foreach (var ignoredFile in MainConfig.IgnoredDataFilePatterns)
+                        foreach (var ignoredPattern in MainConfig.IgnoredDataFilePatterns)
                         {
-                            if (Regex.Match(filePath, ignoredFile, RegexOptions.IgnoreCase).Success)
+                            if (Regex.Match(filePath, ignoredPattern, RegexOptions.IgnoreCase).Success)
                             {
-                                CustomLogger.WriteLine(LogLevel.Text, $"skipping file \"{filePath}\", ignored by config");
-                                continue;
+                                CustomLogger.WriteLine(LogLevel.Text, $"skipping file \"{filePath}\", ignored by pattern \"{ignoredPattern}\"");
+                                ignored = true;
+                                break;
                             }
                         }
                     }
@@ -83,6 +105,11 @@ namespace Quest_Data_Builder
                     CustomLogger.RegisterErrorException(ex);
                     CustomLogger.WriteLine(LogLevel.Error, "Error: failed to process ignored files");
                     CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+                }
+
+                if (ignored)
+                {
+                    continue;
                 }
 
                 if (Path.GetExtension(Path.GetFileName(filePath))?.ToLower() != ".esp" &&
@@ -114,6 +141,7 @@ namespace Quest_Data_Builder
             if (recordData.Count == 0)
             {
                 CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not found");
+                CustomLogger.Shutdown();
                 return;
             }
 

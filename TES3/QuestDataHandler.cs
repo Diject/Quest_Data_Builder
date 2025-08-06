@@ -63,14 +63,14 @@ namespace Quest_Data_Builder.TES3
         public ConcurrentDictionary<string, TopicElement> Topics = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Contains data about local variables in scripts or on objects. By script or object id; by variable name
+        /// Contains data about local variables in scripts or on objects. By script or object id; by variableName name
         /// </summary>
         public ScriptVariables VariablesByScriptId = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Global variables. By variable name
+        /// Global variables. By variableName name
         /// </summary>
-        public Dictionary<string, ScriptVariableList> GlobalVariables = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, ScriptVariableList> GlobalVariables = new(StringComparer.OrdinalIgnoreCase);
 
 
 
@@ -87,10 +87,13 @@ namespace Quest_Data_Builder.TES3
                 // the order should stay the same
                 this.FindQuestData();
                 this.FindQuestRecord();
-                this.FindQuestObjectPositions();
-                this.FixQuestObjectData();
                 this.FindVariables();
                 this.FindRewardItems();
+                this.FixRequirementVarialesType();
+                this.ExpandGlobalVariableRequirements();
+                this.FindQuestObjectPositions();
+                this.FixQuestObjectData();
+                this.FindNextStages();
 
                 if (MainConfig.FindLinksBetweenDialogues)
                 {
@@ -238,7 +241,6 @@ namespace Quest_Data_Builder.TES3
                             if (this.Topics.TryGetValue(((TopicRecord?)element.Record!).Id, out var topic))
                             {
                                 scriptBlock = topic.ScriptBlock;
-                                stage.AddRequirements(topic.Requirements);
                             }
 
                         }
@@ -311,11 +313,20 @@ namespace Quest_Data_Builder.TES3
                     }
                 }
 
-                // Code to find next quest stages
+
+                QuestData.TryAdd(dialog.Id, quest);
+            }
+        }
+
+
+        public void FindNextStages()
+        {
+            foreach (var quest in this.QuestData.Values)
+            {
                 for (int i = 0; i < quest.Stages.Count; i++)
                 {
                     var stage = quest.Stages.Values[i];
-                    
+
                     if (stage.Requirements.IsContainsRequirementType(RequirementType.PreviousDialogChoice))
                     {
                         for (int j = i - 1; j >= 0; j--)
@@ -366,10 +377,9 @@ namespace Quest_Data_Builder.TES3
                         }
                     }
                 }
-
-                QuestData.TryAdd(dialog.Id, quest);
             }
         }
+
 
         public void FindQuestRecord()
         {
@@ -499,6 +509,52 @@ namespace Quest_Data_Builder.TES3
 
         public void FindVariables()
         {
+            void processGlobal(string variableName, ScriptVariableList variableList)
+            {
+                // check if it is a local variableName of an object
+                var match = LocVariableRegex().Match(variableName);
+                if (match.Success)
+                {
+                    var ownerId = match.Groups[1].Value;
+                    var varId = match.Groups[2].Value;
+
+                    if (!this.QuestObjects.TryGetValue(ownerId, out var ownerObject))
+                    {
+                        var type = QuestObjectType.Owner;
+                        if (this.dataHandler.Scripts.ContainsKey(ownerId))
+                        {
+                            type = QuestObjectType.Script;
+                        }
+
+                        ownerObject = this.QuestObjects.Add(ownerId, type);
+                    }
+
+                    if (!this.QuestObjects.TryGetValue(varId, out var varObject))
+                    {
+                        varObject = this.QuestObjects.Add(varId, QuestObjectType.Local);
+                    }
+
+                    if (ownerObject is null || varObject is null) return;
+
+                    ownerObject.AddContainedObjectId(varId);
+                    varObject.AddLink(ownerId);
+
+                    this.VariablesByScriptId.TryAdd(ownerId, new(StringComparer.OrdinalIgnoreCase));
+                    if (!this.VariablesByScriptId[ownerId].TryAdd(varId, variableList))
+                    {
+                        this.VariablesByScriptId[ownerId][varId].AddRange(variableList);
+                    }
+                }
+                else
+                {
+                    if (this.GlobalVariables.TryGetValue(variableName, out var varList))
+                    {
+                        this.GlobalVariables[variableName].AddRange(variableList);
+                    }
+                }
+            }
+
+
             foreach (var scriptItem in this.ScriptDataById)
             {
                 var scriptId = scriptItem.Key;
@@ -507,10 +563,13 @@ namespace Quest_Data_Builder.TES3
                 var variables = script.BlockData.VariableData;
                 if (variables is null) continue;
 
+
                 foreach (var variableItem in variables)
                 {
                     var variableName = variableItem.Key;
                     var variableList = variableItem.Value;
+
+                    //variableList.AddRequirements(script.BlockData.GetRequirements());
 
                     if (variableList.Type != ScriptVariableType.Global)
                     {
@@ -521,46 +580,26 @@ namespace Quest_Data_Builder.TES3
                     }
                     else
                     {
-                        // check if it is a local variable of an object
-                        var match = LocVariableRegex().Match(variableName);
-                        if (match.Success)
-                        {
-                            var ownerId = match.Groups[1].Value;
-                            var varId = match.Groups[2].Value;
-
-                            if (!this.QuestObjects.TryGetValue(ownerId, out var ownerObject))
-                            {
-                                var type = QuestObjectType.Owner;
-                                if (this.dataHandler.Scripts.ContainsKey(ownerId))
-                                {
-                                    type = QuestObjectType.Script;
-                                }
-
-                                ownerObject = this.QuestObjects.Add(ownerId, type);
-                            }
-
-                            if (!this.QuestObjects.TryGetValue(varId, out var varObject))
-                            {
-                                varObject = this.QuestObjects.Add(varId, QuestObjectType.Local);
-                            }
-
-                            if (ownerObject is null || varObject is null) continue;
-
-                            ownerObject.AddContainedObjectId(varId);
-                            varObject.AddLink(ownerId);
-
-                            this.VariablesByScriptId.TryAdd(ownerId, new(StringComparer.OrdinalIgnoreCase));
-                            if (!this.VariablesByScriptId[ownerId].TryAdd(varId, variableList))
-                            {
-                                this.VariablesByScriptId[ownerId][varId].AddRange(variableList);
-                            }
-                        }
-                        else
-                        {
-                            this.GlobalVariables.TryAdd(variableName, new());
-                            this.GlobalVariables[variableName].AddRange(variableList);
-                        }
+                        processGlobal(variableName, variableList);
                     }
+                }
+            }
+
+            foreach (var topic in this.Topics.Values)
+            {
+                if (topic.ScriptBlock is null) continue;
+
+                var variables = topic.ScriptBlock.VariableData;
+                if (variables is null) continue;
+
+                foreach (var variableItem in variables)
+                {
+                    var variableName = variableItem.Key;
+                    var variableList = variableItem.Value;
+
+                    variableList.AddRequirements(topic.ScriptBlock.GetRequirements());
+
+                    processGlobal(variableName, variableList);
                 }
             }
         }
@@ -818,6 +857,11 @@ namespace Quest_Data_Builder.TES3
 
         private void fillData()
         {
+            foreach (var variableName in this.dataHandler.GlobalVariables.Keys)
+            {
+                this.GlobalVariables.TryAdd(variableName, new());
+            }
+
             foreach (var script in this.dataHandler.Scripts.Values)
             {
                 if (script.Text is null) continue;
@@ -836,5 +880,67 @@ namespace Quest_Data_Builder.TES3
                 }
             }
         }
+
+
+        public void FixRequirementVarialesType()
+        {
+            Parallel.ForEach(QuestData.Values, (quest, state) =>
+            {
+                lock (quest)
+                {
+                    foreach (var stage in quest.Stages.Values)
+                    {
+                        foreach (var req in stage.Requirements.SelectMany(a => a))
+                        {
+                            if ((req.Type == RequirementType.CustomLocal || req.Type == RequirementType.CustomGlobal)
+                                && req.Variable is not null)
+                            {
+                                if (this.GlobalVariables.ContainsKey(req.Variable))
+                                    req.Type = RequirementType.CustomGlobal;
+                                else
+                                    req.Type = RequirementType.CustomLocal;
+                            }
+
+                        }
+                    }
+                }
+            });
+        }
+
+
+        public void ExpandGlobalVariableRequirements()
+        {
+            Parallel.ForEach(QuestData.Values, (quest, state) =>
+            {
+                lock (quest)
+                {
+                    foreach (var stage in quest.Stages.Values)
+                    {
+                        foreach (var reqBlock in stage.Requirements)
+                        {
+                            QuestRequirementList newReqs = new();
+                            foreach (var req in reqBlock)
+                            {
+                                if (req.Type != RequirementType.CustomGlobal) continue;
+                                if (req.Value is null || req.Variable is null) continue;
+                                if (!this.GlobalVariables.TryGetValue(req.Variable, out var valList)) continue;
+
+                                foreach (var val in valList)
+                                {
+                                    if (val.Value is null || val.Requirements is null) continue;
+                                    if (Math.Abs((double)val.Value - (double)req.Value) > 0.00001) continue;
+
+                                    newReqs.AddRange(val.Requirements);
+                                    // TODO: make it possible to add multiple requirements for the value
+                                    break; // add only one requirement for the value, because I'm too lazy to implement this new feature for the Morrowind part
+                                }
+                            }
+                            reqBlock.AddRange(newReqs);
+                        }
+                    }
+                }
+            });
+        }
+
     }
 }

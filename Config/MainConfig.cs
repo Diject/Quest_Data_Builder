@@ -381,7 +381,7 @@ namespace Quest_Data_Builder.Config
         private static List<string> GetConfigListData(object data, string extension)
         {
             List<string> res = new();
-            if (extension == "json")
+            if (extension == ".json")
             {
                 Newtonsoft.Json.Linq.JArray ignoredFiles = (Newtonsoft.Json.Linq.JArray)data;
                 for (int i = 0; i < ignoredFiles.Count; i++)
@@ -389,7 +389,7 @@ namespace Quest_Data_Builder.Config
                     res.Add(ignoredFiles.ElementAt(i).ToString());
                 }
             }
-            else if (extension == "yaml" && data is string[] yamlArray)
+            else if (extension == ".yaml" && data is string[] yamlArray)
             {
                 res.AddRange(yamlArray);
             }
@@ -433,8 +433,8 @@ namespace Quest_Data_Builder.Config
 
             dynamic? configData = extension switch
             {
-                "json" => JsonConvert.DeserializeObject(text),
-                "yaml" => yamlDeserializer.Deserialize(text),
+                ".json" => JsonConvert.DeserializeObject(text),
+                ".yaml" => yamlDeserializer.Deserialize(text),
                 _ => null,
             };
 
@@ -442,6 +442,17 @@ namespace Quest_Data_Builder.Config
             {
                 CustomLogger.WriteLine(LogLevel.Error, "Error: Failed to load configuration file.");
                 return false;
+            }
+
+
+            if (configData.initializer is not null)
+            {
+                MainConfig.InitializerType = (string)configData.initializer switch
+                {
+                    "Auto" => InitializerType.Auto,
+                    "Config" => InitializerType.ConfigFile,
+                    _ => InitializerType.Manual,
+                };
             }
 
             if ((object)configData.logToFile is not null && CustomLogger.LogToFile != (bool)configData.logToFile)
@@ -456,9 +467,9 @@ namespace Quest_Data_Builder.Config
                 LogLevel = (LogLevel)configData.logLevel;
             }
 
-            if ((object)configData.directory is not null)
+            if ((object)configData.morrowindDirectory is not null)
             {
-                MorrowindDirectory = (string)configData.directory;
+                MorrowindDirectory = (string)configData.morrowindDirectory;
             }
 
             if ((object)configData.output is not null)
@@ -491,9 +502,9 @@ namespace Quest_Data_Builder.Config
                 DialogueSearchDepth = (int)configData.dialogueSearchDepth;
             }
 
-            if ((object)configData.roundFractionalDigits is not null)
+            if ((object)configData.fractionDigits is not null)
             {
-                RoundFractionalDigits = (int)configData.roundFractionalDigits;
+                RoundFractionalDigits = (int)configData.fractionDigits;
             }
 
             if ((object)configData.optimizeData is not null)
@@ -506,9 +517,27 @@ namespace Quest_Data_Builder.Config
                 StagesNumToAddQuestInfo = (int)configData.stagesNumToAddQuestInfo;
             }
 
+            if ((object)configData.files is not null)
+            {
+                MainConfig.Files = GetConfigListData((object)configData.files, extension!);
+            }
+
             if ((object)configData.gameFiles is not null)
             {
                 GameFiles = GetConfigListData((object)configData.gameFiles, extension!);
+                if (MainConfig.MorrowindDirectory is not null)
+                {
+                    foreach (var file in GameFiles)
+                    {
+                        string filePath = Path.Combine(MainConfig.MorrowindDirectory, "Data Files", file);
+                        MainConfig.Files ??= new();
+
+                        if (!MainConfig.Files.Contains(filePath, StringComparer.OrdinalIgnoreCase))
+                        {
+                            MainConfig.Files.Add(filePath);
+                        }
+                    }
+                }
             }
 
             if (configData.outputFormat is not null)
