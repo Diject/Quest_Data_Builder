@@ -517,14 +517,27 @@ namespace Quest_Data_Builder.Config
                 StagesNumToAddQuestInfo = (int)configData.stagesNumToAddQuestInfo;
             }
 
-            if ((object)configData.gameFiles is not null)
-            {
-                GameFiles = GetConfigListData((object)configData.gameFiles, extension!);
-            }
-
             if ((object)configData.files is not null)
             {
                 MainConfig.Files = GetConfigListData((object)configData.files, extension!);
+            }
+
+            if ((object)configData.gameFiles is not null)
+            {
+                GameFiles = GetConfigListData((object)configData.gameFiles, extension!);
+                if (MainConfig.MorrowindDirectory is not null)
+                {
+                    foreach (var file in GameFiles)
+                    {
+                        string filePath = Path.Combine(MainConfig.MorrowindDirectory, "Data Files", file);
+                        MainConfig.Files ??= new();
+
+                        if (!MainConfig.Files.Contains(filePath, StringComparer.OrdinalIgnoreCase))
+                        {
+                            MainConfig.Files.Add(filePath);
+                        }
+                    }
+                }
             }
 
             if (configData.outputFormat is not null)
