@@ -8,7 +8,7 @@ This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 
 - `-l, --loglevel <LogLevel>`: Logging level (0-3). Default is 1.
 - `-L, --logToFile <bool>`: Enable logging to file. Default is `false`.
-- `-c, --configFile <string>`: Path to the configuration file (JSON format). Default is `config.json` in the current directory.
+- `-c, --configFile <string>`: Path to the configuration file (JSON format with comment support). Default is `config.json` in the current directory.
 
 ## Example Configuration File
 ```
