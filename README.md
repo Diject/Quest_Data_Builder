@@ -11,7 +11,7 @@ This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 - `-c, --configFile <string>`: Path to the configuration file (JSON format). Default is `config.json` in the current directory.
 
 ## Example Configuration File
-```json
+```
 {
 	//Initialization type.
 	//Possible options:
