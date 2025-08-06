@@ -53,11 +53,22 @@ namespace Quest_Data_Builder
                 }
             });
 
-            if (!MainConfig.Initialize(!isConfigFile))
+            try
             {
+                if (!MainConfig.Initialize(!isConfigFile))
+                {
+                    CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                CustomLogger.RegisterErrorException(ex);
                 CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
+                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
                 return;
             }
+
 
             var recordData = new List<RecordDataHandler>();
 
