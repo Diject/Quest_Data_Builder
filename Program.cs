@@ -89,11 +89,11 @@ namespace Quest_Data_Builder
                 {
                     if (MainConfig.IgnoredDataFilePatterns is not null)
                     {
-                        foreach (var ignoredFile in MainConfig.IgnoredDataFilePatterns)
+                        foreach (var ignoredPattern in MainConfig.IgnoredDataFilePatterns)
                         {
-                            if (Regex.Match(filePath, ignoredFile, RegexOptions.IgnoreCase).Success)
+                            if (Regex.Match(filePath, ignoredPattern, RegexOptions.IgnoreCase).Success)
                             {
-                                CustomLogger.WriteLine(LogLevel.Text, $"skipping file \"{filePath}\", ignored by config");
+                                CustomLogger.WriteLine(LogLevel.Text, $"skipping file \"{filePath}\", ignored by pattern \"{ignoredPattern}\"");
                                 ignored = true;
                                 break;
                             }
