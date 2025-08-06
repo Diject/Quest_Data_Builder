@@ -71,6 +71,12 @@ namespace Quest_Data_Builder
                 return;
             }
 
+            if (MainConfig.Files is null)
+            {
+                CustomLogger.WriteLine(LogLevel.Error, "Error: no files specified for processing");
+                CustomLogger.Shutdown();
+                return;
+            }
 
             var recordData = new List<RecordDataHandler>();
 
