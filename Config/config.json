@@ -1,15 +1,15 @@
 {
 	//Initialization type.
 	//Possible options:
-	//"Auto" - the parser tries to find paths to data files automatically, or reads them from "morrowindDirectory", or "omwLauncherCfgPath" + "omwOpenmwCfgPath", or "mo2BaseDirectory".
+	//"Auto" - the generator tries to find paths to data files automatically, or reads them from "morrowindDirectory", or "omwLauncherCfgPath" + "omwOpenmwCfgPath", or "mo2BaseDirectory".
 	//	If data is found, the first valid source will be used for generation: Morrowind directory > OpenMW data > Mod Organizer 2 data.
 	//"Manual" - Same as "Auto", but allows you to select the data source for generation via CLI.
 	//"Config" - Data is loaded from the "files" field or from "morrowindDirectory" + "gameFiles" in the config file.
 	"initializer": "Config",
-	
+
 	//Also log to log.txt. If the parameter is set from the config and not from the command line, the initial part of the logs will not be written to the file.
 	"logToFile": true,
-	
+
 	//Logging level. 0-3
 	"logLevel": 1,
 
@@ -19,10 +19,10 @@
 	"output": "questData",
 	//Format of output files. "json", "yaml" or "lua".
 	"outputFormat": "yaml",
-	
-	//The path settings below are needed when the parser cannot find these paths automatically or specific paths are required.
+
+	//The path settings below are needed when the generator cannot find these paths automatically or specific paths are required.
 	//Uncomment the part you need, as paths set in the config will override those found by other means.
-	
+
 	//List of files with full paths.
 	//"files": [],
 
@@ -41,8 +41,8 @@
 
 	//Regex patterns for ignoring files
 	"ignoredDataFilePatterns": [],
-	
-	
+
+
 	//Maximum number of game object positions to be saved in the output files.
 	"maxObjectPositions": 50,
 	//Remove from output files any data that cannot be used by the mod.
@@ -51,8 +51,8 @@
 	"fractionDigits": 3,
 	//Number of stages in a quest (journal-type dialogue) for its information to be saved.
 	"stagesNumToAddQuestInfo": 1,
-	
-	
+
+
 	//Try to find information about dialogues that can open quest dialogues.
 	"findDialogueLinks": true,
 	//Maximum search depth.
