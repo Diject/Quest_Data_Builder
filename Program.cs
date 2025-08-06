@@ -74,6 +74,13 @@ namespace Quest_Data_Builder
 
             foreach (var filePath in MainConfig.Files!)
             {
+                if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                {
+                    string exceptionMessage = $"Error: file \"{filePath}\" does not exist";
+                    CustomLogger.RegisterErrorException(new Exception(exceptionMessage));
+                    CustomLogger.WriteLine(LogLevel.Error, exceptionMessage);
+                    continue;
+                }
 
                 try
                 {
