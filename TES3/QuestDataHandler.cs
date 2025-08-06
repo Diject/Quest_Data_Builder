@@ -87,10 +87,13 @@ namespace Quest_Data_Builder.TES3
                 // the order should stay the same
                 this.FindQuestData();
                 this.FindQuestRecord();
-                this.FindQuestObjectPositions();
-                this.FixQuestObjectData();
                 this.FindVariables();
                 this.FindRewardItems();
+                this.FixRequirementVarialesType();
+                this.ExpandGlobalVariableRequirements();
+                this.FindQuestObjectPositions();
+                this.FixQuestObjectData();
+                this.FindNextStages();
 
                 if (MainConfig.FindLinksBetweenDialogues)
                 {
@@ -310,11 +313,20 @@ namespace Quest_Data_Builder.TES3
                     }
                 }
 
-                // Code to find next quest stages
+
+                QuestData.TryAdd(dialog.Id, quest);
+            }
+        }
+
+
+        public void FindNextStages()
+        {
+            foreach (var quest in this.QuestData.Values)
+            {
                 for (int i = 0; i < quest.Stages.Count; i++)
                 {
                     var stage = quest.Stages.Values[i];
-                    
+
                     if (stage.Requirements.IsContainsRequirementType(RequirementType.PreviousDialogChoice))
                     {
                         for (int j = i - 1; j >= 0; j--)
@@ -365,8 +377,6 @@ namespace Quest_Data_Builder.TES3
                         }
                     }
                 }
-
-                QuestData.TryAdd(dialog.Id, quest);
             }
         }
 
@@ -870,5 +880,67 @@ namespace Quest_Data_Builder.TES3
                 }
             }
         }
+
+
+        public void FixRequirementVarialesType()
+        {
+            Parallel.ForEach(QuestData.Values, (quest, state) =>
+            {
+                lock (quest)
+                {
+                    foreach (var stage in quest.Stages.Values)
+                    {
+                        foreach (var req in stage.Requirements.SelectMany(a => a))
+                        {
+                            if ((req.Type == RequirementType.CustomLocal || req.Type == RequirementType.CustomGlobal)
+                                && req.Variable is not null)
+                            {
+                                if (this.GlobalVariables.ContainsKey(req.Variable))
+                                    req.Type = RequirementType.CustomGlobal;
+                                else
+                                    req.Type = RequirementType.CustomLocal;
+                            }
+
+                        }
+                    }
+                }
+            });
+        }
+
+
+        public void ExpandGlobalVariableRequirements()
+        {
+            Parallel.ForEach(QuestData.Values, (quest, state) =>
+            {
+                lock (quest)
+                {
+                    foreach (var stage in quest.Stages.Values)
+                    {
+                        foreach (var reqBlock in stage.Requirements)
+                        {
+                            QuestRequirementList newReqs = new();
+                            foreach (var req in reqBlock)
+                            {
+                                if (req.Type != RequirementType.CustomGlobal) continue;
+                                if (req.Value is null || req.Variable is null) continue;
+                                if (!this.GlobalVariables.TryGetValue(req.Variable, out var valList)) continue;
+
+                                foreach (var val in valList)
+                                {
+                                    if (val.Value is null || val.Requirements is null) continue;
+                                    if (Math.Abs((double)val.Value - (double)req.Value) > 0.00001) continue;
+
+                                    newReqs.AddRange(val.Requirements);
+                                    // TODO: make it possible to add multiple requirements for the value
+                                    break; // add only one requirement for the value, because I'm too lazy to implement this new feature for the Morrowind part
+                                }
+                            }
+                            reqBlock.AddRange(newReqs);
+                        }
+                    }
+                }
+            });
+        }
+
     }
 }
