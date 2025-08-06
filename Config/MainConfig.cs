@@ -450,7 +450,7 @@ namespace Quest_Data_Builder.Config
                 MainConfig.InitializerType = (string)configData.initializer switch
                 {
                     "Auto" => InitializerType.Auto,
-                    "ConfigFile" => InitializerType.ConfigFile,
+                    "Config" => InitializerType.ConfigFile,
                     _ => InitializerType.Manual,
                 };
             }
