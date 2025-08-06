@@ -58,6 +58,7 @@ namespace Quest_Data_Builder
                 if (!MainConfig.Initialize(!isConfigFile))
                 {
                     CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
+                    CustomLogger.Shutdown();
                     return;
                 }
             }
@@ -66,6 +67,7 @@ namespace Quest_Data_Builder
                 CustomLogger.RegisterErrorException(ex);
                 CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+                CustomLogger.Shutdown();
                 return;
             }
 
@@ -139,6 +141,7 @@ namespace Quest_Data_Builder
             if (recordData.Count == 0)
             {
                 CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not found");
+                CustomLogger.Shutdown();
                 return;
             }
 
