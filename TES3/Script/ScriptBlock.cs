@@ -608,12 +608,16 @@ namespace Quest_Data_Builder.TES3.Script
         {
             HashSet<ScriptBlock> processedBlocks = new();
 
-            return this.UpdateToIncludeStartScriptData(recordHandler, questHandler, processedBlocks);
+            return this.UpdateToIncludeStartScriptData(recordHandler, questHandler, processedBlocks, 3);
         }
 
-        protected bool UpdateToIncludeStartScriptData(RecordDataHandler recordHandler, QuestDataHandler questHandler, HashSet<ScriptBlock> processedBlocks)
+        protected bool UpdateToIncludeStartScriptData(RecordDataHandler recordHandler, QuestDataHandler questHandler,
+            HashSet<ScriptBlock> processedBlocks, int depth)
         {
             bool ret = false;
+            if (depth <= 0) return ret;
+            depth--;
+
             if (this.FindFunction("StartScript", null, "\\w+", null, out var ress))
             {
                 foreach (var res in ress)
@@ -629,7 +633,7 @@ namespace Quest_Data_Builder.TES3.Script
                         if (scrRecord is not null)
                         {
                             scrData = new ScriptData(scrRecord);
-                            ret = scrData.BlockData.UpdateToIncludeStartScriptData(recordHandler, questHandler, processedBlocks) || ret;
+                            ret = scrData.BlockData.UpdateToIncludeStartScriptData(recordHandler, questHandler, processedBlocks, depth) || ret;
                             questHandler.ScriptDataById.TryAdd(scriptId, scrData);
                         }
                     }
