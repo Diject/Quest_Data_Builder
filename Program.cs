@@ -82,6 +82,7 @@ namespace Quest_Data_Builder
                     continue;
                 }
 
+                bool ignored = false;
                 try
                 {
                     if (MainConfig.IgnoredDataFilePatterns is not null)
@@ -91,7 +92,8 @@ namespace Quest_Data_Builder
                             if (Regex.Match(filePath, ignoredFile, RegexOptions.IgnoreCase).Success)
                             {
                                 CustomLogger.WriteLine(LogLevel.Text, $"skipping file \"{filePath}\", ignored by config");
-                                continue;
+                                ignored = true;
+                                break;
                             }
                         }
                     }
@@ -101,6 +103,11 @@ namespace Quest_Data_Builder
                     CustomLogger.RegisterErrorException(ex);
                     CustomLogger.WriteLine(LogLevel.Error, "Error: failed to process ignored files");
                     CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+                }
+
+                if (ignored)
+                {
+                    continue;
                 }
 
                 if (Path.GetExtension(Path.GetFileName(filePath))?.ToLower() != ".esp" &&
