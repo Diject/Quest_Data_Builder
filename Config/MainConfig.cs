@@ -373,6 +373,13 @@ namespace Quest_Data_Builder.Config
             }
 
 
+            if (InitializerType == InitializerType.ConfigFile)
+            {
+                CustomLogger.WriteLine(LogLevel.Text, "Using configuration from config file.");
+                return true;
+            }
+
+
             return false;
         }
 
@@ -400,7 +407,7 @@ namespace Quest_Data_Builder.Config
 
         public static bool LoadConfiguration(string filename)
         {
-            CustomLogger.WriteLine(LogLevel.Info, "Loading configuration file: " + filename);
+            CustomLogger.WriteLine(LogLevel.Text, "Loading configuration file: " + filename);
 
             if (!File.Exists(filename))
             {
