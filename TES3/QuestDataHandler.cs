@@ -86,14 +86,15 @@ namespace Quest_Data_Builder.TES3
 
                 // the order should stay the same
                 this.FindQuestData();
-                this.FindQuestRecord();
-                this.FindVariables();
                 this.FindRewardItems();
-                this.FixRequirementVarialesType();
+                this.FindNextStages();
+                this.FindVariables(); // to find global variables
                 this.ExpandGlobalVariableRequirements();
+                this.FindQuestRecord();
+                this.FindVariables(); // to find local variables in scripts and topics
+                this.FixRequirementVarialesType();
                 this.FindQuestObjectPositions();
                 this.FixQuestObjectData();
-                this.FindNextStages();
 
                 if (MainConfig.FindLinksBetweenDialogues)
                 {
