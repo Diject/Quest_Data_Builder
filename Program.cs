@@ -1,31 +1,57 @@
-﻿using Quest_Data_Builder.Core;
-using Quest_Data_Builder.TES3.Records;
-using Quest_Data_Builder.TES3;
-using Quest_Data_Builder.TES3.Quest;
-using Quest_Data_Builder.Logger;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy;
-using System.Text.RegularExpressions;
-using Quest_Data_Builder.TES3.Script;
-using System.Collections.Generic;
-using System.Collections;
+﻿using CommandLine;
 using Microsoft.Win32;
-using Quest_Data_Builder.TES3.Serializer;
-using CommandLine;
-using System.IO;
-using Quest_Data_Builder.Extentions;
-using System.Text;
 using Newtonsoft.Json;
 using Quest_Data_Builder.Config;
+using Quest_Data_Builder.Core;
+using Quest_Data_Builder.Extentions;
 using Quest_Data_Builder.Initializer;
+using Quest_Data_Builder.Logger;
+using Quest_Data_Builder.TES3;
+using Quest_Data_Builder.TES3.Quest;
+using Quest_Data_Builder.TES3.Records;
+using Quest_Data_Builder.TES3.Script;
+using Quest_Data_Builder.TES3.Serializer;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy;
 
 namespace Quest_Data_Builder
 {
     internal partial class Program
     {
+        private static void ExitProgram(int exitCode = 0)
+        {
+            if (MainConfig.InitializerType != InitializerType.ConfigFile)
+            {
+                CustomLogger.WriteLine(LogLevel.Text, "Press enter to exit.");
+                Console.ReadLine();
+            }
+            CustomLogger.Shutdown();
+            Environment.Exit(exitCode);
+        }
+
+
         static void Main(string[] args)
         {
+            string? execLocation = Assembly.GetExecutingAssembly().Location;
+            string? exeDir = String.IsNullOrEmpty(execLocation) ? AppContext.BaseDirectory
+                : Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (!string.IsNullOrEmpty(exeDir))
+            {
+                Directory.SetCurrentDirectory(exeDir!);
+            }
+            else
+            {
+                CustomLogger.WriteLine(LogLevel.Error, "Error: failed to set current directory.");
+                ExitProgram(2);
+            }
+
             if (CustomLogger.LogToFile)
                 CustomLogger.ClearLogFile();
 
@@ -58,8 +84,7 @@ namespace Quest_Data_Builder
                 if (!MainConfig.Initialize(!isConfigFile))
                 {
                     CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
-                    CustomLogger.Shutdown();
-                    return;
+                    ExitProgram(3);
                 }
             }
             catch (Exception ex)
@@ -67,15 +92,13 @@ namespace Quest_Data_Builder
                 CustomLogger.RegisterErrorException(ex);
                 CustomLogger.WriteLine(LogLevel.Error, "Error: failed to initialize configuration");
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
-                CustomLogger.Shutdown();
-                return;
+                ExitProgram(4);
             }
 
             if (MainConfig.Files is null)
             {
                 CustomLogger.WriteLine(LogLevel.Error, "Error: no files specified for processing");
-                CustomLogger.Shutdown();
-                return;
+                ExitProgram(5);
             }
 
             var recordData = new List<RecordDataHandler>();
@@ -147,8 +170,7 @@ namespace Quest_Data_Builder
             if (recordData.Count == 0)
             {
                 CustomLogger.WriteLine(LogLevel.Error, "Error: files for data generation are not found");
-                CustomLogger.Shutdown();
-                return;
+                ExitProgram(6);
             }
 
             try
@@ -223,10 +245,8 @@ namespace Quest_Data_Builder
             if (MainConfig.InitializerType != InitializerType.ConfigFile)
             {
                 CustomLogger.WriteLine(LogLevel.Text, $"You can find the output files in \"{Path.GetFullPath(MainConfig.OutputDirectory)}\"");
-                CustomLogger.WriteLine(LogLevel.Text, "Press enter to exit.");
-                Console.ReadLine();
             }
-            CustomLogger.Shutdown();
+            ExitProgram();
         }
 
         public class Options
