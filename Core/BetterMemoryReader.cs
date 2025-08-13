@@ -102,7 +102,7 @@ namespace Quest_Data_Builder.Core
         {
             _reader.Read(_buffer8Bytes, 0, 8);
 
-            return BitConverter.ToInt32(_buffer8Bytes, 0);
+            return BitConverter.ToInt64(_buffer8Bytes, 0);
         }
 
         public override float ReadSingle()
