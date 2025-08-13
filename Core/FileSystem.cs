@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-
-namespace Quest_Data_Builder.Core
+﻿namespace Quest_Data_Builder.Core
 {
     public class FileSystem
     {

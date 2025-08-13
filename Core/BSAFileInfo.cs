@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace Quest_Data_Builder.Core
+﻿namespace Quest_Data_Builder.Core
 {
     public class BSARecord
     {

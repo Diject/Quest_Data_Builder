@@ -1,25 +1,14 @@
 ﻿using CommandLine;
-using Microsoft.Win32;
-using Newtonsoft.Json;
 using Quest_Data_Builder.Config;
 using Quest_Data_Builder.Core;
-using Quest_Data_Builder.Extentions;
-using Quest_Data_Builder.Initializer;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3;
-using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Script;
 using Quest_Data_Builder.TES3.Serializer;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy;
 
 namespace Quest_Data_Builder
 {

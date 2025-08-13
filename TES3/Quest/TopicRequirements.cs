@@ -1,13 +1,6 @@
 ﻿using Quest_Data_Builder.TES3.Records;
-using Quest_Data_Builder.TES3.Script;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Quest_Data_Builder.TES3.Quest
 {

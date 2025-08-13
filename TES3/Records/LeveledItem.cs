@@ -2,13 +2,7 @@
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Handlers;
 using Quest_Data_Builder.TES3.Variables;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Records
 {

@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace Quest_Data_Builder.Core
+﻿namespace Quest_Data_Builder.Core
 {
     public abstract class BetterReader : IDisposable
     {

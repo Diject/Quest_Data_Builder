@@ -1,10 +1,4 @@
 ﻿using Quest_Data_Builder.TES3.Handlers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Variables
 {

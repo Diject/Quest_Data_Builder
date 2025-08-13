@@ -1,8 +1,4 @@
 ﻿using Quest_Data_Builder.Core;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
 namespace Quest_Data_Builder.TES3
 {

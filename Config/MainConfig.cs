@@ -3,16 +3,10 @@ using Quest_Data_Builder.Core;
 using Quest_Data_Builder.Initializer;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Serializer;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using static Quest_Data_Builder.Program;
 
 namespace Quest_Data_Builder.Config
 {
