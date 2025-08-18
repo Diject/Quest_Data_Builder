@@ -148,7 +148,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                 if (requirement.Skill is not null)
                     subTable.Add("skill", requirement.Skill);
 
-                if (ignoreUnnecessary != true && requirement.Script is not null)
+                if (requirement.Script is not null)
                     subTable.Add("script", requirement.Script.ToLower());
 
                 if (requirement.Text is not null)
