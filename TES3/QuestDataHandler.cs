@@ -499,8 +499,9 @@ namespace Quest_Data_Builder.TES3
 
         public void FindVariables()
         {
-            void processGlobal(string variableName, ScriptVariableList variableList)
+            bool? processGlobal(string variableName, ScriptVariableList variableList, string? scriptId = null)
             {
+                bool result = false;
                 // check if it is a local variableName of an object
                 var match = LocVariableRegex().Match(variableName);
                 if (match.Success)
@@ -524,16 +525,33 @@ namespace Quest_Data_Builder.TES3
                         varObject = this.QuestObjects.Add(varId, QuestObjectType.Local);
                     }
 
-                    if (ownerObject is null || varObject is null) return;
+                    if (ownerObject is null || varObject is null) return null;
 
                     ownerObject.AddContainedObjectId(varId);
                     varObject.AddLink(ownerId);
 
+                    if (scriptId is not null)
+                    {
+                        if (!this.QuestObjects.TryGetValue(scriptId, out var scrObject))
+                        {
+                            scrObject = this.QuestObjects.Add(scriptId, QuestObjectType.Script);
+                        }
+                        if (scrObject is not null)
+                        {
+                            varObject.AddLink(scriptId);
+                            scrObject.AddContainedObjectId(varId);
+                        }
+                    }
+
                     this.VariablesByScriptId.TryAdd(ownerId, new(StringComparer.OrdinalIgnoreCase));
+
+
                     if (!this.VariablesByScriptId[ownerId].TryAdd(varId, variableList))
                     {
                         this.VariablesByScriptId[ownerId][varId].AddRange(variableList);
                     }
+
+                    result = true;
                 }
                 else
                 {
@@ -542,6 +560,8 @@ namespace Quest_Data_Builder.TES3
                         this.GlobalVariables[variableName].AddRange(variableList);
                     }
                 }
+
+                return result;
             }
 
 
@@ -570,7 +590,7 @@ namespace Quest_Data_Builder.TES3
                     }
                     else
                     {
-                        processGlobal(variableName, variableList);
+                        processGlobal(variableName, variableList, scriptId);
                     }
                 }
             }
@@ -589,7 +609,25 @@ namespace Quest_Data_Builder.TES3
 
                     variableList.AddRequirements(topic.ScriptBlock.GetRequirements());
 
-                    processGlobal(variableName, variableList);
+                    if (processGlobal(variableName, variableList) == false)
+                    {
+                        if (topic.Record.Actor is not null && topic.Name is not null)
+                        {
+                            var actorHandler = this.QuestObjects.Add(topic.Record.Actor, QuestObjectType.Object);
+                            var qObjectHandler = this.QuestObjects.Add(variableName, QuestObjectType.Local);
+                            var dialogueHandler = this.QuestObjects.Add(Consts.DialoguePrefix + topic.Name, QuestObjectType.Dialog);
+                            var topicHandler = this.QuestObjects.Add(topic.Id, QuestObjectType.Topic);
+
+                            dialogueHandler!.AddContainedObject(topicHandler!);
+                            topicHandler!.AddLink(qObjectHandler!);
+
+                            qObjectHandler!.AddLink(actorHandler!);
+                            qObjectHandler!.AddContainedObject(dialogueHandler!);
+
+                            this.VariablesByScriptId.TryAdd(topic.Record.Actor, new(StringComparer.OrdinalIgnoreCase));
+                            this.VariablesByScriptId[topic.Record.Actor].TryAdd(variableName, variableList);
+                        }
+                    }
                 }
             }
         }
@@ -711,7 +749,6 @@ namespace Quest_Data_Builder.TES3
                 var qObj = quest is null ? this.QuestObjects.Add(obj.ObjectId, obj.Type) :
                     this.QuestObjects.Add(obj.ObjectId, quest, stage, obj.Type);
                 if (qObj is null) return;
-
                 if (MainConfig.OptimizeData && (obj.Links.Count + obj.Contains.Count > 40)) return;
 
                 foreach (var linkId in obj.Links.Keys)
