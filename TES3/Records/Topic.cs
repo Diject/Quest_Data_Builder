@@ -152,7 +152,7 @@ namespace Quest_Data_Builder.TES3.Records
                             }
                         case "BNAM":
                             {
-                                Result = reader.ReadString(length).RemoveMWScriptComments();
+                                Result = reader.ReadNullTerminatedString(length).RemoveMWScriptComments();
                                 break;
                             }
                         case "QSTN":
