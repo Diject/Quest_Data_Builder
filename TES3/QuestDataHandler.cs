@@ -712,23 +712,20 @@ namespace Quest_Data_Builder.TES3
                     this.QuestObjects.Add(obj.ObjectId, quest, stage, obj.Type);
                 if (qObj is null) return;
 
-                lock (qObj)
-                {
-                    if (MainConfig.OptimizeData && (obj.Links.Count + obj.Contains.Count > 40)) return;
+                if (MainConfig.OptimizeData && (obj.Links.Count + obj.Contains.Count > 40)) return;
 
-                    foreach (var linkId in obj.Links.Keys)
+                foreach (var linkId in obj.Links.Keys)
+                {
+                    if (dialogueObjects.TryGetValue(linkId, out var dialogueObject) && qObj.AddLink(linkId))
                     {
-                        if (dialogueObjects.TryGetValue(linkId, out var dialogueObject) && qObj.AddLink(linkId))
-                        {
-                            addDialogueToQuestObjectData(dialogueObject, null, 0, depth - 1);
-                        }
+                        addDialogueToQuestObjectData(dialogueObject, null, 0, depth - 1);
                     }
-                    foreach (var linkId in obj.Contains.Keys)
+                }
+                foreach (var linkId in obj.Contains.Keys)
+                {
+                    if (dialogueObjects.TryGetValue(linkId, out var dialogueObject) && qObj.AddContainedObjectId(linkId))
                     {
-                        if (dialogueObjects.TryGetValue(linkId, out var dialogueObject) && qObj.AddContainedObjectId(linkId))
-                        {
-                            addDialogueToQuestObjectData(dialogueObject, null, 0, depth - 1);
-                        }
+                        addDialogueToQuestObjectData(dialogueObject, null, 0, depth - 1);
                     }
                 }
             }
@@ -737,8 +734,7 @@ namespace Quest_Data_Builder.TES3
             {
                 if (this.QuestObjects.TryGetValue(diaQuestObjectItem.Key, out var qObj))
                 {
-                    lock (diaQuestObjectItem.Value)
-                        addDialogueToQuestObjectData(diaQuestObjectItem.Value, null, 0, MainConfig.DialogueSearchDepth);
+                    addDialogueToQuestObjectData(diaQuestObjectItem.Value, null, 0, MainConfig.DialogueSearchDepth);
                 }
             });
         }
