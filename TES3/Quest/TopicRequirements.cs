@@ -140,13 +140,21 @@ namespace Quest_Data_Builder.TES3.Quest
                             ChoiceRegex().Match(next.Result).Success)
                         {
                             var matches = ChoiceArgumentsRegex().Matches(next.Result);
-                            if (matches.Any(a => int.Parse(a.Groups[2].Value) == topicVar.IntValue))
+                            var match = matches.FirstOrDefault(a => a.Groups.Count > 3 && int.Parse(a.Groups[3].Value) == topicVar.IntValue);
+                            if (match is not null)
                             {
                                 foreach (var req in next.Variables)
                                 {
                                     var requirement = new QuestRequirement(req);
                                     this.Add(requirement);
                                 }
+
+                                var targetReq = this.FirstOrDefault(a => a.Type == RequirementType.PreviousDialogChoice);
+                                if (targetReq is not null)
+                                {
+                                    targetReq.Variable = match.Groups[2].Value;
+                                }
+                                
                                 break;
                             }
                         }
@@ -158,7 +166,7 @@ namespace Quest_Data_Builder.TES3.Quest
 
         [GeneratedRegex(@"choice .+?\d+", RegexOptions.IgnoreCase)]
         private static partial Regex ChoiceRegex();
-        [GeneratedRegex("(\\\".+?\\\" (\\d+))+", RegexOptions.IgnoreCase)]
+        [GeneratedRegex("(\\\"(.+?)\\\" (\\d+))+", RegexOptions.IgnoreCase)]
         private static partial Regex ChoiceArgumentsRegex();
     }
 }
