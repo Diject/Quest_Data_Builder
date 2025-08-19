@@ -111,7 +111,6 @@ namespace Quest_Data_Builder.Initializer
             foreach (string profilePath in Directory.GetDirectories(profilesDirectory))
             {
                 ProfileData profileData = new(new(), new(), new());
-                profileData.Data.Add(this.MorrowindDataDirectory);
 
                 string profileName = Path.GetFileName(profilePath);
 
@@ -158,6 +157,7 @@ namespace Quest_Data_Builder.Initializer
                     continue;
                 }
 
+                profileData.Data.Add(this.MorrowindDataDirectory);
 
                 this.profiles.Add(profileName, profileData);
                 CustomLogger.WriteLine(LogLevel.Text, $"MO2 profile \"{profileName}\" data loaded successfully.");
