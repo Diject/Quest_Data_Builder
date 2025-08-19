@@ -1,10 +1,12 @@
 # Quest Data Builder
 
-Quest Data Builder is a quest data generator for Morrowind, designed for use with the [Quest Guider](https://www.nexusmods.com/morrowind/mods/55593) and [Quest Guider Lite](https://www.nexusmods.com/morrowind/mods/55593) mods.
+Quest Data Builder is a quest data generator for Morrowind, designed for use with the [Quest Guider](https://www.nexusmods.com/morrowind/mods/55593) and [Quest Guider Lite](https://www.nexusmods.com/morrowind/mods/57285) mods.
 
 **Requires [.NET Runtime 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) to run.**
 
 This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
+
+The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) module, which is distributed under the Apache License 2.0. The license text is available at: [LICENSE](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 ## Command-Line Arguments
 
