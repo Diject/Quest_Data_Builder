@@ -244,7 +244,7 @@ namespace Quest_Data_Builder.Initializer
 
             CustomLogger.WriteLine(LogLevel.Info, $"OpenMW current profile: {CurrentProfile}");
 
-            var profileEntries = Regex.Matches(profileSectionText, @"(\w+)/(\w+)\s*=\s*(.+)", RegexOptions.IgnoreCase);
+            var profileEntries = Regex.Matches(profileSectionText, @"(.+)/(\w+)\s*=\s*(.+)", RegexOptions.IgnoreCase);
             if (profileEntries.Count == 0)
             {
                 CustomLogger.WriteLine(LogLevel.Warn, "No profile data found in OpenMW launcher.cfg.");
