@@ -1,8 +1,4 @@
-﻿using Quest_Data_Builder.Core;
-using System;
-using System.Collections.Generic;
-
-namespace Quest_Data_Builder.TES3
+﻿namespace Quest_Data_Builder.TES3
 {
     public class Record
     {

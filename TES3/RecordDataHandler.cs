@@ -1,18 +1,8 @@
-﻿using Quest_Data_Builder.Logger;
-using Quest_Data_Builder.TES3.Cell;
-using Quest_Data_Builder.TES3.Handlers;
+﻿using Quest_Data_Builder.TES3.Handlers;
 using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Variables;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Quest_Data_Builder.TES3
 {
@@ -27,6 +17,7 @@ namespace Quest_Data_Builder.TES3
         public Dictionary<string, RecordWithScript> RecordsWithScript = new(StringComparer.OrdinalIgnoreCase);
         public LeveledItemHandler LeveledItems = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, LeveledCreature> LeveledCreatures = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, GlobalVariableRecord> GlobalVariables = new(StringComparer.OrdinalIgnoreCase);
 
         public RecordDataHandler(TES3DataFile master)
         {
@@ -95,6 +86,13 @@ namespace Quest_Data_Builder.TES3
                 {
                     var record = new LeveledCreature(recordData);
                     this.LeveledCreatures.TryAdd(record.Id, record);
+                }
+
+            if (master.Records.ContainsKey(RecordType.GlobalVariable))
+                foreach (var recordData in master.Records[RecordType.GlobalVariable])
+                {
+                    var record = new GlobalVariableRecord(recordData);
+                    this.GlobalVariables.TryAdd(record.Name, record);
                 }
         }
 
@@ -293,6 +291,30 @@ namespace Quest_Data_Builder.TES3
                 else
                 {
                     this.LeveledItems.Add(newItem.Key, newItem.Value);
+                }
+            }
+
+            foreach (var newItem in newHandler.LeveledCreatures)
+            {
+                if (this.LeveledCreatures.TryGetValue(newItem.Key, out var record))
+                {
+                    record.Merge(newItem.Value);
+                }
+                else
+                {
+                    this.LeveledCreatures.Add(newItem.Key, newItem.Value);
+                }
+            }
+
+            foreach (var newItem in newHandler.GlobalVariables)
+            {
+                if (this.GlobalVariables.TryGetValue(newItem.Key, out var record))
+                {
+                    record.Merge(newItem.Value);
+                }
+                else
+                {
+                    this.GlobalVariables.TryAdd(newItem.Key, newItem.Value);
                 }
             }
         }

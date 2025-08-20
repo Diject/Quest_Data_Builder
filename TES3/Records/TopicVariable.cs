@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Quest_Data_Builder.TES3.Records
+﻿namespace Quest_Data_Builder.TES3.Records
 {
     class SCVRVariable
     {
@@ -15,7 +8,7 @@ namespace Quest_Data_Builder.TES3.Records
         public readonly SCVROperator Operator;
         public readonly string Name = "";
         public float? FLTV; //Needs to set manually
-        public UInt32? INTV; //Needs to set manually
+        public Int32? INTV; //Needs to set manually
 
         public float? FloatValue { get { return FLTV; } }
         public float? IntValue { get { return INTV; } }

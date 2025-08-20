@@ -1,9 +1,4 @@
 ﻿using Quest_Data_Builder.TES3.Records;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Script
 {
@@ -60,7 +55,7 @@ namespace Quest_Data_Builder.TES3.Script
             { "GetLuck", new ConditionDataSruct(){ RequirementType = RequirementType.CustomAttribute, Attribute = 7 } },
 
             { "GetCastPenalty", new ConditionDataSruct(){ RequirementType = RequirementType.CustomCastPenalty } },
-            { "GetLevel", new ConditionDataSruct(){ RequirementType = RequirementType.Custom, TypeForPlayer = RequirementType.PlayerLevel, TypeForActor = RequirementType.NPCLevel } },
+            { "GetLevel", new ConditionDataSruct(){ RequirementType = RequirementType.NPCLevel, TypeForPlayer = RequirementType.PlayerLevel, TypeForActor = RequirementType.NPCLevel } },
             { "GetAIPackageDone", new ConditionDataSruct(){ RequirementType = RequirementType.CustomAIPackageDone } },
             { "GetAngle", new ConditionDataSruct(){ RequirementType = RequirementType.CustomAngle } },
             { "GetArmorType", new ConditionDataSruct(){ RequirementType = RequirementType.CustomArmorType } },

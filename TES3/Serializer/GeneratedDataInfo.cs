@@ -1,30 +1,28 @@
-﻿using Luaon.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Quest_Data_Builder.Config;
 
 namespace Quest_Data_Builder.TES3.Serializer
 {
     class GeneratedDataInfo
     {
-        static readonly int version = 5;
+        static readonly int version = 7;
         readonly List<string> files;
+        readonly CustomSerializer serializer;
 
-        public GeneratedDataInfo(List<string> files)
+        public GeneratedDataInfo(List<string> files, SerializerType format = SerializerType.Json)
         {
             this.files = files;
+            serializer = new CustomSerializer(format);
         }
 
         public override string ToString()
         {
-            var table = new LTable();
+            var table = serializer.NewTable();
 
             table.Add("version", version);
             table.Add("time", (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalSeconds);
+            table.Add("format", MainConfig.OutputFileFormat);
 
-            var filesTable = new LTable();
+            var filesTable = serializer.NewArray();
             foreach (var file in files)
             {
                 var filename = Path.GetFileName(file);
@@ -33,7 +31,7 @@ namespace Quest_Data_Builder.TES3.Serializer
             }
             table.Add("files", filesTable);
 
-            return table.ToString();
+            return serializer.GetResult(table);
         }
     }
 }

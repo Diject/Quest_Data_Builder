@@ -1,11 +1,4 @@
-﻿using Quest_Data_Builder.TES3.Quest;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Quest_Data_Builder.TES3.Script
+﻿namespace Quest_Data_Builder.TES3.Script
 {
     enum ScriptVariableType
     {
@@ -39,6 +32,16 @@ namespace Quest_Data_Builder.TES3.Script
                 Value = numberVal;
             }
         }
+
+
+        public void AddRequirements(QuestRequirementList? requirements)
+        {
+            if (requirements is not null && requirements.Count > 0)
+            {
+                this.Requirements ??= new QuestRequirementList();
+                this.Requirements.AddRange(requirements);
+            }
+        }
     }
 
 
@@ -59,6 +62,14 @@ namespace Quest_Data_Builder.TES3.Script
             foreach (ScriptVariable variable in list)
             {
                 this.Add(variable);
+            }
+        }
+
+        public void AddRequirements(QuestRequirementList? requirements)
+        {
+            foreach (var variable in this)
+            {
+                variable.AddRequirements(requirements);
             }
         }
     }

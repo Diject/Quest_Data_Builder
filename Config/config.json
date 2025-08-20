@@ -1,21 +1,3 @@
-# Quest Data Builder
-
-Quest Data Builder is a quest data generator for Morrowind, designed for use with the [Quest Guider](https://www.nexusmods.com/morrowind/mods/55593) and [Quest Guider Lite](https://www.nexusmods.com/morrowind/mods/57285) mods.
-
-**Requires [.NET Runtime 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) to run.**
-
-This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
-
-The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) module, which is distributed under the Apache License 2.0. The license text is available at: [LICENSE](https://www.apache.org/licenses/LICENSE-2.0.html)
-
-## Command-Line Arguments
-
-- `-l, --loglevel <LogLevel>`: Logging level (0-3). Default is 1.
-- `-L, --logToFile <bool>`: Enable logging to file. Default is `false`.
-- `-c, --configFile <string>`: Path to the configuration file (JSON format with comment support). Default is `config.json` in the current directory.
-
-## Example Configuration File
-```
 {
 	//Initialization type.
 	//Possible options:
@@ -23,11 +5,11 @@ The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) mod
 	//	If data is found, the first valid source will be used for generation: Morrowind directory > OpenMW data > Mod Organizer 2 data.
 	//"Manual" - Same as "Auto", but allows you to select the data source for generation via CLI.
 	//"Config" - Data is loaded from the "files" field or from "morrowindDirectory" + "gameFiles" in the config file.
-	"initializer": "Manual",
-	
+	"initializer": "Config",
+
 	//Also log to log.txt. If the parameter is set from the config and not from the command line, the initial part of the logs will not be written to the file.
 	"logToFile": true,
-	
+
 	//Logging level. 0-3
 	"logLevel": 1,
 
@@ -37,10 +19,10 @@ The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) mod
 	"output": "questData",
 	//Format of output files. "json", "yaml" or "lua".
 	"outputFormat": "yaml",
-	
+
 	//The path settings below are needed when the generator cannot find these paths automatically or specific paths are required.
 	//Uncomment the part you need, as paths set in the config will override those found by other means.
-	
+
 	//List of files with full paths.
 	//"files": [],
 
@@ -59,7 +41,8 @@ The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) mod
 
 	//Regex patterns for ignoring files
 	"ignoredDataFilePatterns": [],
-	
+
+
 	//Maximum number of game object positions to be saved in the output files.
 	"maxObjectPositions": 50,
 	//Remove from output files any data that cannot be used by the mod.
@@ -68,7 +51,8 @@ The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) mod
 	"fractionDigits": 3,
 	//Number of stages in a quest (journal-type dialogue) for its information to be saved.
 	"stagesNumToAddQuestInfo": 1,
-	
+
+
 	//Try to find information about dialogues that can open quest dialogues.
 	"findDialogueLinks": true,
 	//Maximum search depth.
@@ -76,4 +60,3 @@ The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) mod
 	//Do not save dialogue data for individual dialogues if there are too many.
 	"optimizeData": true
 }
-```

@@ -1,11 +1,6 @@
 ﻿using Quest_Data_Builder.Core;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Variables;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Records
 {
@@ -13,9 +8,9 @@ namespace Quest_Data_Builder.TES3.Records
     {
         public readonly string Type = RecordType.LeveledCreature;
         public readonly string Id = "";
-        public readonly uint Data;
-        public readonly byte ChanceNone;
-        public readonly uint? Count;
+        public uint Data { get; private set; }
+        public byte ChanceNone { get; private set; }
+        public uint? Count { get; private set; }
         public readonly HashSet<string> Creatures = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
@@ -46,7 +41,7 @@ namespace Quest_Data_Builder.TES3.Records
 
             if (this.RecordInfo.Data is null) throw new Exception("leveled creature record data is null");
 
-            CustomLogger.WriteLine(LogLevel.Info, $"leveled creature record {this.RecordInfo.Position}");
+            CustomLogger.WriteLine(LogLevel.Misc, $"leveled creature record {this.RecordInfo.Position}");
 
             using (var reader = new BetterBinaryReader(new MemoryStream(this.RecordInfo.Data)))
             {
@@ -57,14 +52,12 @@ namespace Quest_Data_Builder.TES3.Records
                     string field = reader.ReadString(4);
                     int length = reader.ReadInt32();
 
-                    CustomLogger.WriteLine(LogLevel.Misc, $"field {field} length {length}");
-
                     switch (field)
                     {
                         case "NAME":
                             {
                                 Id = reader.ReadNullTerminatedString(length);
-                                CustomLogger.WriteLine(LogLevel.Info, $"ID {Id}");
+                                CustomLogger.WriteLine(LogLevel.Misc, $"ID {Id}");
                                 break;
                             }
                         case "DATA":
@@ -118,14 +111,22 @@ namespace Quest_Data_Builder.TES3.Records
             }
         }
 
-        public void Merge(LeveledItem newRecord)
+        public void Merge(LeveledCreature newRecord)
         {
             this.IsDeleted |= newRecord.IsDeleted;
             this.Creatures.Clear();
-            foreach (var item in newRecord.CarriedItems)
+            foreach (var item in newRecord.Creatures)
             {
                 this.Creatures.Add(item);
             }
+            this.Items.Clear();
+            foreach (var item in newRecord.Items)
+            {
+                this.Items.Add(item);
+            }
+            this.Data = newRecord.Data;
+            this.ChanceNone = newRecord.ChanceNone;
+            this.Count = newRecord.Count;
         }
     }
 }

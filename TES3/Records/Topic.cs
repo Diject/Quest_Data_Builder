@@ -1,12 +1,6 @@
 ﻿using Quest_Data_Builder.Core;
 using Quest_Data_Builder.Extentions;
 using Quest_Data_Builder.Logger;
-using Quest_Data_Builder.TES3;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Records
 {
@@ -62,7 +56,7 @@ namespace Quest_Data_Builder.TES3.Records
             Parent = parent;
             IsDeleted = this.RecordInfo.Deleted;
 
-            CustomLogger.WriteLine(LogLevel.Info, $"topic record {RecordInfo.Position}");
+            CustomLogger.WriteLine(LogLevel.Misc, $"topic record {RecordInfo.Position}");
 
             using (var reader = new BetterBinaryReader(new MemoryStream(RecordInfo.Data!)))
             {
@@ -71,14 +65,12 @@ namespace Quest_Data_Builder.TES3.Records
                     string field = reader.ReadString(4);
                     int length = reader.ReadInt32();
 
-                    CustomLogger.WriteLine(LogLevel.Misc, $"field {field} length {length}");
-
                     switch (field)
                     {
                         case "INAM":
                             {
                                 Id = reader.ReadNullTerminatedString(length);
-                                CustomLogger.WriteLine(LogLevel.Info, $"ID {Id}");
+                                CustomLogger.WriteLine(LogLevel.Misc, $"ID {Id}");
                                 break;
                             }
                         case "PNAM":
@@ -150,7 +142,7 @@ namespace Quest_Data_Builder.TES3.Records
                             }
                         case "INTV":
                             {
-                                Variables.Last().INTV = reader.ReadUInt32();
+                                Variables.Last().INTV = reader.ReadInt32();
                                 break;
                             }
                         case "FLTV":
@@ -160,7 +152,7 @@ namespace Quest_Data_Builder.TES3.Records
                             }
                         case "BNAM":
                             {
-                                Result = reader.ReadString(length).RemoveMWScriptComments();
+                                Result = reader.ReadNullTerminatedString(length).RemoveMWScriptComments();
                                 break;
                             }
                         case "QSTN":

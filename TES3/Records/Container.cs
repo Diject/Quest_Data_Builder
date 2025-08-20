@@ -1,11 +1,6 @@
 ﻿using Quest_Data_Builder.Core;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Variables;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Records
 {
@@ -32,7 +27,7 @@ namespace Quest_Data_Builder.TES3.Records
 
             if (this.RecordInfo.Data is null) throw new Exception("container record data is null");
 
-            CustomLogger.WriteLine(LogLevel.Info, $"container record {this.RecordInfo.Position}");
+            CustomLogger.WriteLine(LogLevel.Misc, $"container record {this.RecordInfo.Position}");
 
             using (var reader = new BetterBinaryReader(new MemoryStream(this.RecordInfo.Data)))
             {
@@ -41,14 +36,12 @@ namespace Quest_Data_Builder.TES3.Records
                     string field = reader.ReadString(4);
                     int length = reader.ReadInt32();
 
-                    CustomLogger.WriteLine(LogLevel.Misc, $"field {field} length {length}");
-
                     switch (field)
                     {
                         case "NAME":
                             {
                                 Id = reader.ReadNullTerminatedString(length);
-                                CustomLogger.WriteLine(LogLevel.Info, $"ID {Id}");
+                                CustomLogger.WriteLine(LogLevel.Misc, $"ID {Id}");
                                 break;
                             }
                         case "SCRI":

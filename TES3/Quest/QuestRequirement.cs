@@ -1,9 +1,4 @@
 ﻿using Quest_Data_Builder.TES3.Records;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Quest
 {
@@ -18,7 +13,7 @@ namespace Quest_Data_Builder.TES3.Quest
         public uint? Attribute { get; set; }
         public uint? Skill { get; set; }
         public string? Script { get; set; }
-        public string? Dialogue { get; set; }
+        public (string Id, string TopicId)? Dialogue { get; set; }
         /// <summary>
         /// The text from which the record was created.
         /// Presents only in records that have the default (RequirementType.Custom) type set.
@@ -38,6 +33,15 @@ namespace Quest_Data_Builder.TES3.Quest
         public QuestRequirement()
         {
 
+        }
+
+        /// <summary>
+        /// Inits the requirement with the given topic, but does not set the type and this type related values.
+        /// </summary>
+        public QuestRequirement(TopicRecord topic)
+        {
+            if (topic.Parent is not null)
+                this.Dialogue = (topic.Parent.Id, topic.Id);
         }
 
         public QuestRequirement(SCVRVariable topicVariable)

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Quest_Data_Builder.TES3.Records
+﻿namespace Quest_Data_Builder.TES3.Records
 {
     static class RecordType
     {
@@ -17,5 +11,6 @@ namespace Quest_Data_Builder.TES3.Records
         public const string Container = "CONT";
         public const string LeveledItem = "LEVI";
         public const string LeveledCreature = "LEVC";
+        public const string GlobalVariable = "GLOB";
     }
 }

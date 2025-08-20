@@ -1,13 +1,5 @@
 ﻿using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Script;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Quest_Data_Builder.TES3.Quest
 {
@@ -47,7 +39,8 @@ namespace Quest_Data_Builder.TES3.Quest
                 {
                     var newRequirement = new QuestRequirement();
                     newRequirement.Type = RequirementType.CustomDialogue;
-                    newRequirement.Variable = Consts.DialoguePrefix + requirement.Dialogue;
+                    newRequirement.Variable = Consts.DialoguePrefix + requirement.Dialogue.Value.Id;
+                    newRequirement.ValueStr = requirement.Dialogue.Value.TopicId;
 
                     block.Add(newRequirement);
                     hasAddedDialRequirement = true;

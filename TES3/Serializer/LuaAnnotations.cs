@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Quest_Data_Builder.TES3.Serializer
+﻿namespace Quest_Data_Builder.TES3.Serializer
 {
-    internal partial class CustomSerializer
+    internal partial class DataSerializer
     {
         public static string LuaAnnotations = @"
 ---@class questDataGenerator.requirementData
@@ -30,7 +24,7 @@ namespace Quest_Data_Builder.TES3.Serializer
 ---@field restart boolean|nil restart flag
 
 
----@alias questDataGenerator.questData { name: string, [string]: questDataGenerator.stageData }
+---@alias questDataGenerator.questData { name: string, links: string[]?, hasFinished: boolean?, [string]: questDataGenerator.stageData }
 
 ---@alias questDataGenerator.quests table<string, questDataGenerator.questData>
 

@@ -31,7 +31,7 @@ namespace Quest_Data_Builder.TES3.Records
 
             IsDeleted = this.RecordInfo.Deleted;
 
-            CustomLogger.WriteLine(LogLevel.Info, $"dialog record {this.RecordInfo.Position}");
+            CustomLogger.WriteLine(LogLevel.Misc, $"dialog record {this.RecordInfo.Position}");
 
             using (var reader = new BetterBinaryReader(new MemoryStream(this.RecordInfo.Data)))
             {
@@ -40,14 +40,12 @@ namespace Quest_Data_Builder.TES3.Records
                     string field = reader.ReadString(4);
                     int length = reader.ReadInt32();
 
-                    CustomLogger.WriteLine(LogLevel.Misc, $"field {field} length {length}");
-
                     switch (field)
                     {
                         case "NAME":
                             {
                                 Id = reader.ReadNullTerminatedString(length);
-                                CustomLogger.WriteLine(LogLevel.Info, $"ID {Id}");
+                                CustomLogger.WriteLine(LogLevel.Misc, $"ID {Id}");
                                 break;
                             }
                         case "DATA":
