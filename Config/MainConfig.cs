@@ -74,6 +74,9 @@ namespace Quest_Data_Builder.Config
         public static string OutputFileFormat = "json";
 
 
+        private static bool lockEncoding = false;
+
+
         public static bool Initialize(bool loadInitialDataFromRootConfig = true)
         {
             if (loadInitialDataFromRootConfig)
@@ -148,9 +151,10 @@ namespace Quest_Data_Builder.Config
 
                     Files = gameFiles;
 
-                    if (omwHandler.Encoding is not null)
+                    if (omwHandler.Encoding is not null && !lockEncoding)
                     {
                         FileEncoding = omwHandler.Encoding;
+                        lockEncoding = true;
                     }
 
                     CustomLogger.WriteLine(LogLevel.Text, "Morrowind data files have been initialized from OMW handler.");
@@ -277,6 +281,15 @@ namespace Quest_Data_Builder.Config
                 }
                 else
                 {
+                    if (selectedHandler.Type == InitializatorType.OMWHandler)
+                    {
+                        if (selectedHandler.Encoding is not null && !lockEncoding)
+                        {
+                            FileEncoding = selectedHandler.Encoding;
+                            lockEncoding = true;
+                        }
+                    }
+
                     List<string> profileNames = selectedHandler.ProfileNames;
                     if (profileNames.Count == 0)
                     {
@@ -481,6 +494,7 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.encoding is not null)
             {
                 FileEncoding = Encoding.GetEncoding((int)configData.encoding);
+                lockEncoding = true;
             }
 
             if ((object)configData.maxObjectPositions is not null)
