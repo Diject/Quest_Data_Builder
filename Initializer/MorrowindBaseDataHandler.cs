@@ -36,7 +36,7 @@ namespace Quest_Data_Builder.Initializer
 
             if (string.IsNullOrEmpty(MorrowindDirectory) || !Directory.Exists(MorrowindDirectory))
             {
-                CustomLogger.WriteLine(LogLevel.Error, "Morrowind directory is not set or does not exist.");
+                CustomLogger.WriteLine(LogLevel.Warn, "Morrowind directory is not set or does not exist.");
                 MorrowindDirectory = null;
                 return;
             }
