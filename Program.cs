@@ -212,15 +212,21 @@ namespace Quest_Data_Builder
 
                 CustomLogger.WriteLine(LogLevel.Text, $"Writing data to \"{Path.GetFullPath(MainConfig.OutputDirectory)}\"");
 
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests." + MainConfig.OutputFileFormat]), jsonSer.QuestData(), MainConfig.FileEncoding);
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText." + MainConfig.OutputFileFormat]), jsonSer.QuestByTopicText(), MainConfig.FileEncoding);
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects." + MainConfig.OutputFileFormat]), jsonSer.QuestObjects(), MainConfig.FileEncoding);
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables." + MainConfig.OutputFileFormat]), jsonSer.LocalVariableDataByScriptId(), MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests." + MainConfig.OutputFileFormat]), jsonSer.QuestData(),
+                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText." + MainConfig.OutputFileFormat]), jsonSer.QuestByTopicText(),
+                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects." + MainConfig.OutputFileFormat]), jsonSer.QuestObjects(),
+                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables." + MainConfig.OutputFileFormat]), jsonSer.LocalVariableDataByScriptId(),
+                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
 
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), DataSerializer.LuaAnnotations, MainConfig.FileEncoding);
+                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), DataSerializer.LuaAnnotations,
+                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
                 File.WriteAllText(
                     Path.Combine([MainConfig.OutputDirectory, "info." + MainConfig.OutputFileFormat]),
-                    new GeneratedDataInfo(MainConfig.Files, MainConfig.OutputFormatType).ToString()
+                    new GeneratedDataInfo(MainConfig.Files, MainConfig.OutputFormatType).ToString(),
+                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding
                 );
             }
             catch (Exception ex)

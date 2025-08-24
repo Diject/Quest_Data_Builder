@@ -27,11 +27,16 @@ namespace Quest_Data_Builder.Initializer
                 }
                 try
                 {
-                    return Encoding.GetEncoding(this.encoding);
+                    string encoding = this.encoding;
+                    if (encoding.StartsWith("win", StringComparison.OrdinalIgnoreCase))
+                    {
+                        encoding = "windows-" + encoding[3..];
+                    }
+                    return Encoding.GetEncoding(encoding);
                 }
                 catch (ArgumentException)
                 {
-                    CustomLogger.WriteLine(LogLevel.Error, $"Invalid encoding specified: {this.encoding}.");
+                    CustomLogger.WriteLine(LogLevel.Warn, $"Invalid encoding specified: {this.encoding}.");
                     return null;
                 }
             }
