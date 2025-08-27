@@ -54,14 +54,57 @@ namespace Quest_Data_Builder.Initializer
                 CustomLogger.WriteLine(LogLevel.Text, $"Mod Organizer 2 base directory found at: {this.baseDirectory}");
             }
 
-            if (!File.Exists(Path.Combine(this.baseDirectory, "ModOrganizer.ini")))
+            string? modOrganizerIniPath = Path.Combine(this.baseDirectory, "ModOrganizer.ini");
+            if (!File.Exists(modOrganizerIniPath))
             {
-                CustomLogger.WriteLine(LogLevel.Error, "\"ModOrganizer.ini\" file does not exist in Mod Organizer 2 base directory.");
-                return;
+                modOrganizerIniPath = null;
+                string? mo2dir = null;
+                string? localDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (!string.IsNullOrEmpty(localDir))
+                {
+                    mo2dir = Path.Combine(localDir, "ModOrganizer", "Morrowind");
+                }
+
+                if (Directory.Exists(mo2dir))
+                {
+                    modOrganizerIniPath = Path.Combine(mo2dir, "ModOrganizer.ini");
+                }
+
+                if (String.IsNullOrEmpty(modOrganizerIniPath) || !File.Exists(modOrganizerIniPath))
+                {
+                    CustomLogger.WriteLine(LogLevel.Error, "\"ModOrganizer.ini\" file does not exist in Mod Organizer 2 base directory.");
+                    return;
+                }
             }
 
 
-            string modOrganizerIniContent = File.ReadAllText(Path.Combine(this.baseDirectory, "ModOrganizer.ini"));
+            string modOrganizerIniContent = File.ReadAllText(modOrganizerIniPath);
+
+            var baseDirMatch = Regex.Match(modOrganizerIniContent, @"^base_directory\s*=\s*(.+)", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            if (baseDirMatch.Success)
+            {
+                this.baseDirectory = FileLocator.ExpandPath(baseDirMatch.Groups[1].Value.Trim().Replace(@"\\", @"\"));
+            }
+
+
+            var profilesDirMatch = Regex.Match(modOrganizerIniContent, @"^profiles_directory\s*=\s*(.+)", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            string profilesDirectory = profilesDirMatch.Success
+                ? profilesDirMatch.Groups[1].Value.Trim().Replace(@"%BASE_DIR%", this.baseDirectory)
+                : Path.Combine(this.baseDirectory, "profiles");
+
+
+            var modsDirMatch = Regex.Match(modOrganizerIniContent, @"^mod_directory\s*=\s*(.+)", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            string modsDirectory = modsDirMatch.Success
+                ? modsDirMatch.Groups[1].Value.Trim().Replace(@"%BASE_DIR%", this.baseDirectory)
+                : Path.Combine(this.baseDirectory, "mods");
+
+
+            var overwriteDirMatch = Regex.Match(modOrganizerIniContent, @"^overwrite_directory\s*=\s*(.+)", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            string overwriteDirectory = overwriteDirMatch.Success
+                ? overwriteDirMatch.Groups[1].Value.Trim().Replace(@"%BASE_DIR%", this.baseDirectory)
+                : Path.Combine(this.baseDirectory, "overwrite");
+
+
             var gamePathMathch = Regex.Match(modOrganizerIniContent, @"^gamePath\s*=\s*@ByteArray\((.+)\)", RegexOptions.Multiline | RegexOptions.IgnoreCase);
             if (gamePathMathch.Success)
             {
@@ -91,23 +134,22 @@ namespace Quest_Data_Builder.Initializer
             }
 
 
-            if (!Directory.Exists(Path.Combine(this.baseDirectory, "profiles")))
+            if (!Directory.Exists(profilesDirectory))
             {
                 CustomLogger.WriteLine(LogLevel.Error, "\"profiles\" directory does not exist in Mod Organizer 2 base directory.");
                 return;
             }
-            if (!Directory.Exists(Path.Combine(this.baseDirectory, "mods")))
+            if (!Directory.Exists(modsDirectory))
             {
                 CustomLogger.WriteLine(LogLevel.Error, "\"mods\" directory does not exist in Mod Organizer 2 base directory.");
                 return;
             }
-            if (!Directory.Exists(Path.Combine(this.baseDirectory, "overwrite")))
+            if (!Directory.Exists(overwriteDirectory))
             {
                 CustomLogger.WriteLine(LogLevel.Warn, "\"overwrite\" directory does not exist in Mod Organizer 2 base directory.");
             }
 
 
-            string profilesDirectory = Path.Combine(this.baseDirectory, "profiles");
             foreach (string profilePath in Directory.GetDirectories(profilesDirectory))
             {
                 ProfileData profileData = new(new(), new(), new());
@@ -127,7 +169,7 @@ namespace Quest_Data_Builder.Initializer
                 {
                     string modName = match.Groups[1].Value.Trim();
                     profileData.Managed.Add(modName);
-                    var modPath = Path.Combine(this.baseDirectory, "mods", modName);
+                    var modPath = Path.Combine(modsDirectory, modName);
                     if (!string.IsNullOrEmpty(modName) && Directory.Exists(modPath))
                     {
                         profileData.Data.Add(modPath);
@@ -168,6 +210,8 @@ namespace Quest_Data_Builder.Initializer
             if (currentProfileMatch.Success)
             {
                 var currentProfileName = currentProfileMatch.Groups[1].Value;
+                CustomLogger.WriteLine(LogLevel.Text, $"MO2 current profile: \"{currentProfileName}\"");
+
                 if (this.profiles.ContainsKey(currentProfileName))
                 {
                     this.CurrentProfile = currentProfileName;
