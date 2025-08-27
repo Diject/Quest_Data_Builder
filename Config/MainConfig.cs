@@ -300,7 +300,8 @@ namespace Quest_Data_Builder.Config
                     CustomLogger.WriteLine(LogLevel.Text, "\nSelect a profile from the available profiles:");
                     for (int i = 0; i < profileNames.Count; i++)
                     {
-                        CustomLogger.WriteLine(LogLevel.Text, $"{i + 1}. {profileNames[i]}");
+                        string currentMarker = String.Equals(profileNames[i], selectedHandler.CurrentProfile) ? "(current)" : "";
+                        CustomLogger.WriteLine(LogLevel.Text, $"{i + 1}. {profileNames[i]} {currentMarker}");
                     }
 
                     CustomLogger.WriteLine(LogLevel.Text, "\nEnter the number of the profile to use, or 'q' to quit:");
