@@ -231,15 +231,14 @@ namespace Quest_Data_Builder.Initializer
             // Custom parser because OpenMW's launcher.cfg is not a standard INI file
             var text = File.ReadAllText(Environment.ExpandEnvironmentVariables(filePath), Encoding.UTF8);
 
-            var profilesSection = Regex.Match(text, @"\[Profiles\](.*?)\[|$", RegexOptions.Singleline);
-            if (!profilesSection.Success)
+            var profileSectionText = GetProfilesSection(text);
+            if (profileSectionText is null)
             {
                 CustomLogger.WriteLine(LogLevel.Warn, "Profiles section not found in OpenMW launcher.cfg.");
                 return false;
             }
-            var profileSectionText = profilesSection.Groups[1].Value.Trim();
 
-            var currentProfileMatch = Regex.Match(profileSectionText, @"currentprofile\s*=\s*(\w+)", RegexOptions.IgnoreCase);
+            var currentProfileMatch = Regex.Match(profileSectionText, @"currentprofile\s*=\s*(.+)", RegexOptions.IgnoreCase);
             if (!currentProfileMatch.Success)
             {
                 CustomLogger.WriteLine(LogLevel.Warn, "Current profile not found in OpenMW launcher.cfg.");
@@ -247,7 +246,7 @@ namespace Quest_Data_Builder.Initializer
             }
             this.CurrentProfile = currentProfileMatch.Groups[1].Value.Trim();
 
-            CustomLogger.WriteLine(LogLevel.Info, $"OpenMW current profile: {CurrentProfile}");
+            CustomLogger.WriteLine(LogLevel.Text, $"OpenMW current profile: \"{CurrentProfile}\"");
 
             var profileEntries = Regex.Matches(profileSectionText, @"(.+)/(\w+)\s*=\s*(.+)", RegexOptions.IgnoreCase);
             if (profileEntries.Count == 0)
@@ -301,6 +300,34 @@ namespace Quest_Data_Builder.Initializer
             }
 
             return FileLocator.ResolveFullFilePaths(profileData.content, profileData.data);
+        }
+
+
+        private static string? GetProfilesSection(string text)
+        {
+            var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+            var sb = new StringBuilder();
+            bool inSection = false;
+
+            foreach (var line in lines)
+            {
+                if (!inSection)
+                {
+                    if (line.Trim().Equals("[Profiles]", StringComparison.OrdinalIgnoreCase))
+                    {
+                        inSection = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(line)) break;
+
+                    sb.AppendLine(line);
+                }
+            }
+
+            return sb.Length > 0 ? sb.ToString() : null;
         }
     }
 }
