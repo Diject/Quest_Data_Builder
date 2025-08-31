@@ -242,8 +242,17 @@ namespace Quest_Data_Builder.TES3.Records
             return true;
         }
 
+        public void SetParent(DialogRecord parent)
+        {
+            this.Parent = parent;
+        }
+
         public void Merge(TopicRecord newRecord)
         {
+            // sometimes merges are attempted with different types, ignore those because they are invalid (I guess)
+            if (newRecord.Type != this.Type)
+                return;
+
             if (newRecord.Parent is not null)
             {
                 if (this.Parent is null || this.Parent.Id != newRecord.Parent.Id)
