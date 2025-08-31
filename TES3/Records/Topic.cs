@@ -184,7 +184,15 @@ namespace Quest_Data_Builder.TES3.Records
                     }
                 }
             }
-            Parent = parent;
+
+            if (parent is not null && this.Type is not null)
+            {
+                if (parent.Type != this.Type)
+                {
+                    CustomLogger.WriteLine(LogLevel.Warn, $"Warning: topic {this.Id} has type {this.Type} but parent dialog {parent.Id} has type {parent.Type}. Overriding topic type to match parent.");
+                }
+                this.Type = parent.Type;
+            }
         }
 
         /// <summary>
