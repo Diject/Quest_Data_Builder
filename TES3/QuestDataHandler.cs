@@ -84,12 +84,28 @@ namespace Quest_Data_Builder.TES3
                 this.FixRequirementVarialesType();
                 this.FindQuestObjectPositions();
                 this.FixQuestObjectData();
+            }
+            catch (Exception ex)
+            {
+                CustomLogger.RegisterErrorException(ex);
+                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+            }
 
+            try
+            {
                 if (MainConfig.FindLinksBetweenDialogues)
                 {
                     this.findLinksToDialogs();
                 }
+            }
+            catch (Exception ex)
+            {
+                CustomLogger.RegisterErrorException(ex);
+                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+            }
 
+            try
+            {
                 if (MainConfig.RemoveUnused)
                 {
                     this.RemoveUnused();
@@ -100,7 +116,6 @@ namespace Quest_Data_Builder.TES3
                 CustomLogger.RegisterErrorException(ex);
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
             }
-                
         }
 
         private void findQuestContainingElements()
