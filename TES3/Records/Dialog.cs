@@ -74,6 +74,24 @@ namespace Quest_Data_Builder.TES3.Records
             }
         }
 
+
+        private void SortTopics()
+        {
+            Topics.Sort((a, b) =>
+            {
+                if (String.Equals(a.NextId, b.Id, StringComparison.OrdinalIgnoreCase))
+                    return -1;
+                else if (String.Equals(b.NextId, a.Id, StringComparison.OrdinalIgnoreCase))
+                    return 1;
+                else if (String.Equals(a.PreviousId, b.Id, StringComparison.OrdinalIgnoreCase))
+                    return 1;
+                else if (String.Equals(b.PreviousId, a.Id, StringComparison.OrdinalIgnoreCase))
+                    return -1;
+                return 0;
+            });
+        }
+
+
         public void Merge(DialogRecord newRecord)
         {
             this.Type = newRecord.Type;
@@ -87,9 +105,11 @@ namespace Quest_Data_Builder.TES3.Records
                 }
                 else
                 {
+                    newTopic.SetParent(this);
                     this.Topics.Add(newTopic);
                 }
             }
+            SortTopics();
         }
     }
 }

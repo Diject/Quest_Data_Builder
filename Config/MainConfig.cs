@@ -3,6 +3,7 @@ using Quest_Data_Builder.Core;
 using Quest_Data_Builder.Initializer;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Serializer;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using YamlDotNet.Serialization;
@@ -100,6 +101,9 @@ namespace Quest_Data_Builder.Config
                     return true;
                 }
             }
+
+            var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+            CustomLogger.WriteLine(LogLevel.Text, $"Quest Data Builder v{assemblyVersion ?? "0"} initializing...");
 
 
             if (InitializerType == InitializerType.Auto)

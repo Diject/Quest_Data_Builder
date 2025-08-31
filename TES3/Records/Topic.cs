@@ -184,7 +184,15 @@ namespace Quest_Data_Builder.TES3.Records
                     }
                 }
             }
-            Parent = parent;
+
+            if (parent is not null && this.Type is not null)
+            {
+                if (parent.Type != this.Type)
+                {
+                    CustomLogger.WriteLine(LogLevel.Warn, $"Warning: topic {this.Id} has type {this.Type} but parent dialog {parent.Id} has type {parent.Type}. Overriding topic type to match parent.");
+                }
+                this.Type = parent.Type;
+            }
         }
 
         /// <summary>
@@ -242,8 +250,17 @@ namespace Quest_Data_Builder.TES3.Records
             return true;
         }
 
+        public void SetParent(DialogRecord parent)
+        {
+            this.Parent = parent;
+        }
+
         public void Merge(TopicRecord newRecord)
         {
+            // sometimes merges are attempted with different types, ignore those because they are invalid (I guess)
+            if (newRecord.Type != this.Type)
+                return;
+
             if (newRecord.Parent is not null)
             {
                 if (this.Parent is null || this.Parent.Id != newRecord.Parent.Id)

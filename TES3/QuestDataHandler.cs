@@ -84,12 +84,28 @@ namespace Quest_Data_Builder.TES3
                 this.FixRequirementVarialesType();
                 this.FindQuestObjectPositions();
                 this.FixQuestObjectData();
+            }
+            catch (Exception ex)
+            {
+                CustomLogger.RegisterErrorException(ex);
+                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+            }
 
+            try
+            {
                 if (MainConfig.FindLinksBetweenDialogues)
                 {
                     this.findLinksToDialogs();
                 }
+            }
+            catch (Exception ex)
+            {
+                CustomLogger.RegisterErrorException(ex);
+                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+            }
 
+            try
+            {
                 if (MainConfig.RemoveUnused)
                 {
                     this.RemoveUnused();
@@ -100,7 +116,6 @@ namespace Quest_Data_Builder.TES3
                 CustomLogger.RegisterErrorException(ex);
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
             }
-                
         }
 
         private void findQuestContainingElements()
@@ -681,62 +696,70 @@ namespace Quest_Data_Builder.TES3
 
                 Parallel.ForEach(diaDataItem.Value, (topic, state) =>
                 {
+                    string? topicResult;
+                    string? topicResponse;
+                    string? topicActor;
+                    string topicId = topic.Id;
                     lock (topic)
                     {
-                        if (!String.IsNullOrEmpty(topic.Result))
+                        topicResult = topic.Result;
+                        topicResponse = topic.Response;
+                        topicActor = topic.Actor;
+                    }
+
+                    if (!String.IsNullOrEmpty(topicResult))
+                    {
+                        var matches = AddTopicRegex().Matches(topicResult);
+                        foreach (Match match in matches)
                         {
-                            var matches = AddTopicRegex().Matches(topic.Result);
-                            foreach (Match match in matches)
-                            {
-                                var dialogId = match.Groups[1].Value.Trim();
+                            var dialogId = match.Groups[1].Value.Trim();
 
-                                var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
-                                if (parentDia is null) break;
+                            var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
+                            if (parentDia is null) break;
 
-                                var parentTopic = dialogueObjects.Add(topic.Id, QuestObjectType.Topic);
-                                if (parentTopic is null) break;
+                            var parentTopic = dialogueObjects.Add(topicId, QuestObjectType.Topic);
+                            if (parentTopic is null) break;
 
-                                var childDia = dialogueObjects.Add(Consts.DialoguePrefix + dialogId, QuestObjectType.Dialog);
-                                if (childDia is null) continue;
+                            var childDia = dialogueObjects.Add(Consts.DialoguePrefix + dialogId, QuestObjectType.Dialog);
+                            if (childDia is null) continue;
 
-                                var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
-                                if (owner is null) continue;
+                            var owner = dialogueObjects.Add(topicActor, QuestObjectType.Object);
+                            if (owner is null) continue;
 
-                                parentDia.AddContainedObject(parentTopic);
-                                parentTopic.AddLink(owner);
-                                parentTopic.AddLink(parentDia);
-                                parentTopic.AddContainedObject(childDia);
-                                childDia.AddLink(parentTopic);
-                            }
+                            parentDia.AddContainedObject(parentTopic);
+                            parentTopic.AddLink(owner);
+                            parentTopic.AddLink(parentDia);
+                            parentTopic.AddContainedObject(childDia);
+                            childDia.AddLink(parentTopic);
                         }
+                    }
 
-                        if (topic.Response is null || topic.Actor is null) state.Break();
+                    if (topicResponse is null || topicActor is null) state.Break();
 
-                        actorsDialogues.TryGetValue(topic.Actor!, out var actorDialogueIds);
-                        if (actorDialogueIds is null) state.Break();
+                    actorsDialogues.TryGetValue(topicActor!, out var actorDialogueIds);
+                    if (actorDialogueIds is null) state.Break();
 
-                        foreach (var actorDiaId in actorDialogueIds!)
+                    foreach (var actorDiaId in actorDialogueIds!)
+                    {
+                        if (topicResponse!.Contains(actorDiaId, StringComparison.OrdinalIgnoreCase))
                         {
-                            if (topic.Response!.Contains(actorDiaId, StringComparison.OrdinalIgnoreCase))
-                            {
-                                var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
-                                if (parentDia is null) break;
+                            var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
+                            if (parentDia is null) break;
 
-                                var parentTopic = dialogueObjects.Add(topic.Id, QuestObjectType.Topic);
-                                if (parentTopic is null) break;
+                            var parentTopic = dialogueObjects.Add(topicId, QuestObjectType.Topic);
+                            if (parentTopic is null) break;
 
-                                var childDia = dialogueObjects.Add(Consts.DialoguePrefix + actorDiaId, QuestObjectType.Dialog);
-                                if (childDia is null) continue;
+                            var childDia = dialogueObjects.Add(Consts.DialoguePrefix + actorDiaId, QuestObjectType.Dialog);
+                            if (childDia is null) continue;
 
-                                var owner = dialogueObjects.Add(topic.Actor, QuestObjectType.Object);
-                                if (owner is null) continue;
+                            var owner = dialogueObjects.Add(topicActor, QuestObjectType.Object);
+                            if (owner is null) continue;
 
-                                parentDia.AddContainedObject(parentTopic);
-                                parentTopic.AddLink(owner);
-                                parentTopic.AddLink(parentDia);
-                                parentTopic.AddContainedObject(childDia);
-                                childDia.AddLink(parentTopic);
-                            }
+                            parentDia.AddContainedObject(parentTopic);
+                            parentTopic.AddLink(owner);
+                            parentTopic.AddLink(parentDia);
+                            parentTopic.AddContainedObject(childDia);
+                            childDia.AddLink(parentTopic);
                         }
                     }
                 });
