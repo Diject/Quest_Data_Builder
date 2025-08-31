@@ -174,15 +174,11 @@ namespace Quest_Data_Builder.Initializer
                 return false;
             }
 
-            bool hadDefaultProfile = this.profilesData.ContainsKey("Default");
-            if (this.CurrentProfile == null)
+            bool hasProfiles = this.profilesData.Count > 0;
+            if (!hasProfiles)
             {
                 this.CurrentProfile = "Default";
-                if (!this.profilesData.TryGetValue(this.CurrentProfile, out var profileData))
-                {
-                    profileData = (new(), new());
-                    this.profilesData.Add(this.CurrentProfile, profileData);
-                }
+                this.profilesData.Add(this.CurrentProfile, (new(), new()));
             }
 
             foreach (Match entry in entries)
@@ -194,12 +190,12 @@ namespace Quest_Data_Builder.Initializer
                 {
                     this.encoding = value;
                     CustomLogger.WriteLine(LogLevel.Info, $"OpenMW encoding is {this.encoding}");
-                    if (hadDefaultProfile) break; else continue;
+                    if (hasProfiles) break; else continue;
                 }
 
-                if (hadDefaultProfile) continue;
+                if (hasProfiles) continue;
 
-                if (this.profilesData.TryGetValue(this.CurrentProfile, out var profileData))
+                if (this.profilesData.TryGetValue("Default", out var profileData))
                 {
                     switch (key)
                     {
