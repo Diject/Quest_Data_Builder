@@ -18,6 +18,7 @@ namespace Quest_Data_Builder.TES3
         public LeveledItemHandler LeveledItems = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, LeveledCreature> LeveledCreatures = new(StringComparer.OrdinalIgnoreCase);
         public ConcurrentDictionary<string, GlobalVariableRecord> GlobalVariables = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, LandRecord> Lands = new(StringComparer.OrdinalIgnoreCase);
 
         public RecordDataHandler(TES3DataFile master)
         {
@@ -94,6 +95,15 @@ namespace Quest_Data_Builder.TES3
                     var record = new GlobalVariableRecord(recordData);
                     this.GlobalVariables.TryAdd(record.Name, record);
                 }
+
+            if (master.Records.TryGetValue(RecordType.Land, out var landRecords))
+            {
+                foreach (var recordData in landRecords)
+                {
+                    var record = new LandRecord(recordData);
+                    this.Lands.TryAdd(record.Name, record);
+                }
+            }
         }
 
         public void IterateObjectPositionsFromCells(QuestObjectById objectsToFind, Action<CellRecord, CellReference, QuestObject> action)
@@ -317,6 +327,18 @@ namespace Quest_Data_Builder.TES3
                     this.GlobalVariables.TryAdd(newItem.Key, newItem.Value);
                 }
             }
+
+            foreach (var newItem in newHandler.Lands)
+            {
+                if (this.Lands.TryGetValue(newItem.Key, out var record))
+                {
+                    record.Merge(newItem.Value);
+                }
+                else
+                {
+                    this.Lands.TryAdd(newItem.Key, newItem.Value);
+                }
+            }
         }
 
         public void RemoveDeletedRecords()
@@ -429,6 +451,21 @@ namespace Quest_Data_Builder.TES3
                 foreach (var key in deleted)
                 {
                     this.LeveledItems.Remove(key);
+                }
+            }
+
+
+            {
+                HashSet<string> deleted = new();
+                foreach (var land in this.Lands)
+                {
+                    if (land.Value.IsDeleted)
+                        deleted.Add(land.Key);
+                }
+
+                foreach (var key in deleted)
+                {
+                    this.Lands.Remove(key, out _);
                 }
             }
         }

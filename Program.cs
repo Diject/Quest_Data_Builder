@@ -236,6 +236,27 @@ namespace Quest_Data_Builder
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
             }
 
+            if (MainConfig.EnableHeightMapImageGeneration)
+            {
+                try
+                {
+                    var mapImageBuilder = new MapImageBuilder(recordData[0]);
+                    mapImageBuilder.BuildImage(Path.Combine(Path.GetFullPath(MainConfig.OutputDirectory), "map.png"));
+
+                    File.WriteAllText(
+                        Path.Combine([MainConfig.OutputDirectory, "mapInfo." + MainConfig.OutputFileFormat]),
+                        mapImageBuilder.GenerateInfo(MainConfig.OutputFormatType),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding
+                    );
+                }
+                catch (Exception ex)
+                {
+                    CustomLogger.RegisterErrorException(ex);
+                    CustomLogger.WriteLine(LogLevel.Error, "Error: failed to build map image");
+                    CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+                }
+            }
+
             CustomLogger.WriteLine(LogLevel.Text, $"\nCompleted with {CustomLogger.Errors.Count} errors");
             if (MainConfig.InitializerType != InitializerType.ConfigFile)
             {

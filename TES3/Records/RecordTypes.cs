@@ -12,5 +12,6 @@
         public const string LeveledItem = "LEVI";
         public const string LeveledCreature = "LEVC";
         public const string GlobalVariable = "GLOB";
+        public const string Land = "LAND";
     }
 }

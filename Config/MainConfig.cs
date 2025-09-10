@@ -71,6 +71,9 @@ namespace Quest_Data_Builder.Config
         /// </summary>
         public static int StagesNumToAddQuestInfo = 1;
 
+        public static bool EnableHeightMapImageGeneration = false;
+        public static double HeightMapImageDownscaleFactor = 2;
+
         public static SerializerType OutputFormatType = SerializerType.Json;
         public static string OutputFileFormat = "json";
 
@@ -594,6 +597,16 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.ignoredDataFilePatterns is not null)
             {
                 IgnoredDataFilePatterns = GetConfigListData((object)configData.ignoredDataFilePatterns, extension!);
+            }
+
+            if ((object)configData.enableHeightMapImageGeneration is not null)
+            {
+                EnableHeightMapImageGeneration = (bool)configData.enableHeightMapImageGeneration;
+            }
+
+            if ((object)configData.heightMapImageDownscaleFactor is not null)
+            {
+                HeightMapImageDownscaleFactor = (double)configData.heightMapImageDownscaleFactor;
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");
