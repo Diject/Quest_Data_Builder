@@ -63,6 +63,22 @@
 ---@field reqs questDataGenerator.requirementBlock|nil requirements to get this topic. Contains only function/variable requirements
 
 ---@alias questDataGenerator.dialogueTopicData table<string, questDataGenerator.dialogueTopicInfo[]>
+
+---@class questDataGenerator.dataInfo
+---@field version integer data format version
+---@field time integer UNIX timestamp
+---@field format string format of the data files
+---@field files string[] list of all files that were used to generate this data
+
+---@class questDataGenerator.mapImageInfo
+---@field version integer
+---@field time integer
+---@field file string
+---@field width integer
+---@field height integer
+---@field pixelsPerCell integer
+---@field gridX {min : integer, max : integer}
+---@field gridY {min : integer, max : integer}
 ";
     }
 }
