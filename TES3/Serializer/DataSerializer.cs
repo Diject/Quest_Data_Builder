@@ -109,52 +109,60 @@ namespace Quest_Data_Builder.TES3.Serializer
         }
 
 
-        private dynamic serializeRequirement(QuestRequirementList requirements, bool? ignoreUnnecessary)
+        private dynamic? serializeRequirement(QuestRequirement requirement, bool? ignoreUnnecessary)
+        {
+            if (ignoreUnnecessary == true && requirement.Type == RequirementType.CustomScript)
+            {
+                return null;
+            }
+
+            var subTable = newTable();
+            subTable.Add("type", requirement.Type);
+            subTable.Add("operator", (int)requirement.Operator);
+
+            if (requirement.Type == RequirementType.CustomActor && requirement.Dialogue is not null)
+            {
+                subTable.Add("value", requirement.Dialogue.Value.TopicId.ToLower());
+                subTable.Add("variable", Consts.DialoguePrefix + requirement.Dialogue.Value.Id.ToLower());
+            }
+            else
+            {
+                if (requirement.Value is not null)
+                    subTable.Add("value", requirement.Value);
+                else if (requirement.ValueStr is not null)
+                    subTable.Add("value", requirement.ValueStr.ToLower());
+
+                if (requirement.Variable is not null)
+                    subTable.Add("variable", requirement.Variable.ToLower());
+            }
+
+            if (requirement.Object is not null)
+                subTable.Add("object", requirement.Object.ToLower());
+
+            if (requirement.Attribute is not null)
+                subTable.Add("attribute", requirement.Attribute);
+
+            if (requirement.Skill is not null)
+                subTable.Add("skill", requirement.Skill);
+
+            if (requirement.Script is not null)
+                subTable.Add("script", requirement.Script.ToLower());
+
+            if (requirement.Text is not null)
+                subTable.Add("text", requirement.Text);
+
+            return subTable;
+        }
+
+
+        private dynamic serializeRequirements(QuestRequirementList requirements, bool? ignoreUnnecessary)
         {
             var requirementTable = newArray();
             foreach (var requirement in requirements)
             {
-                if (ignoreUnnecessary == true && requirement.Type == RequirementType.CustomScript)
-                {
-                    continue;
-                }
-
-                var subTable = newTable();
-                subTable.Add("type", requirement.Type);
-                subTable.Add("operator", (int)requirement.Operator);
-
-                if (requirement.Type == RequirementType.CustomActor && requirement.Dialogue is not null)
-                {
-                    subTable.Add("value", requirement.Dialogue.Value.TopicId.ToLower());
-                    subTable.Add("variable", Consts.DialoguePrefix + requirement.Dialogue.Value.Id.ToLower());
-                }
-                else
-                {
-                    if (requirement.Value is not null)
-                        subTable.Add("value", requirement.Value);
-                    else if (requirement.ValueStr is not null)
-                        subTable.Add("value", requirement.ValueStr.ToLower());
-
-                    if (requirement.Variable is not null)
-                        subTable.Add("variable", requirement.Variable.ToLower());
-                }
-
-                if (requirement.Object is not null)
-                    subTable.Add("object", requirement.Object.ToLower());
-
-                if (requirement.Attribute is not null)
-                    subTable.Add("attribute", requirement.Attribute);
-
-                if (requirement.Skill is not null)
-                    subTable.Add("skill", requirement.Skill);
-
-                if (requirement.Script is not null)
-                    subTable.Add("script", requirement.Script.ToLower());
-
-                if (requirement.Text is not null)
-                    subTable.Add("text", requirement.Text);
-
-                requirementTable.Add(subTable);
+                var reqTable = serializeRequirement(requirement, ignoreUnnecessary);
+                if (reqTable is not null)
+                    requirementTable.Add(reqTable);
             }
 
             return requirementTable;
@@ -224,7 +232,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                     var requirementsTable = newArray();
                     foreach (var requirements in stageItem.Value.Requirements)
                     {
-                        requirementsTable.Add(serializeRequirement(requirements, false));
+                        requirementsTable.Add(serializeRequirements(requirements, false));
                     }
                     stageTable.Add("requirements", requirementsTable);
 
@@ -589,7 +597,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                         var reqsArray = newArray();
                         foreach (var requirements in valItem.Value)
                         {
-                            reqsArray.Add(serializeRequirement(requirements, true));
+                            reqsArray.Add(serializeRequirements(requirements, true));
                         }
                         valsTable.Add(valItem.Key, reqsArray);
                     }
@@ -599,6 +607,65 @@ namespace Quest_Data_Builder.TES3.Serializer
                     varsTable.Add(varsItem.Key.ToLower(), varTable);
                 }
                 table.Add(scriptItem.Key.ToLower(), varsTable);
+            }
+
+            return getResult(table);
+        }
+
+
+        public string DialogueTopics()
+        {
+            var topics = dataHandler.Topics;
+            var dialogues = dataHandler.dataHandler.Dialogs;
+
+            var table = newTable();
+
+            foreach (var diaItem in dialogues)
+            {
+                if (diaItem.Value.Type == DialogType.Journal) continue;
+
+                bool hasDialRequirement = false;
+                var topicsArray = newArray();
+                foreach (var topic in diaItem.Value.Topics)
+                {
+                    if (topic.Type != DialogType.RegularTopic && topic.Type != DialogType.Greeting) continue;
+
+                    if (topic.Variables.Count > 0)
+                    {
+                        bool hasAddedDialRequirement = false;
+
+                        var reqsArray = newArray();
+                        foreach (var variable in topic.Variables)
+                        {
+                            var requirement = new QuestRequirement(variable);
+                            if (!requirement.IsPlayerRequirement && requirement.Object is null)
+                            {
+                                requirement.Object = topic.Actor;
+                            }
+                            if (topic.Parent is not null)
+                                requirement.Dialogue = (topic.Parent.Id, topic.Id);
+
+                            var reqArr = serializeRequirement(requirement, true);
+                            if (reqArr is not null)
+                            {
+                                reqsArray.Add(reqArr);
+                                hasAddedDialRequirement = true;
+                            }
+                        }
+
+                        if (hasAddedDialRequirement)
+                        {
+                            hasDialRequirement = true;
+                            var topicTable = newTable();
+                            topicTable.Add("id", topic.Id.ToLower());
+                            topicTable.Add("reqs", reqsArray);
+                            topicsArray.Add(topicTable);
+                        }
+                    }
+                }
+
+                if (hasDialRequirement)
+                    table.Add(diaItem.Key.ToLower(), topicsArray);
             }
 
             return getResult(table);

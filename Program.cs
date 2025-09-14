@@ -221,6 +221,12 @@ namespace Quest_Data_Builder
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables." + MainConfig.OutputFileFormat]), jsonSer.LocalVariableDataByScriptId(),
                     MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
 
+                if (MainConfig.GenerateDialogueTopicRequirements)
+                {
+                    File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "dialogueTopics." + MainConfig.OutputFileFormat]), jsonSer.DialogueTopics(),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                }
+
                 File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), DataSerializer.LuaAnnotations,
                     MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
                 File.WriteAllText(

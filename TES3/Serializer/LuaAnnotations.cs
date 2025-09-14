@@ -56,6 +56,13 @@
 ---@field results table<string, questDataGenerator.requirementBlock[]>
 
 ---@alias questDataGenerator.localVariableByQuestId table<string, table<string, questDataGenerator.localVariableData>>
+
+
+---@class questDataGenerator.dialogueTopicInfo
+---@field id string dialogue topic id
+---@field reqs questDataGenerator.requirementBlock|nil requirements to get this topic. Contains only function/variable requirements
+
+---@alias questDataGenerator.dialogueTopicData table<string, questDataGenerator.dialogueTopicInfo[]>
 ";
     }
 }

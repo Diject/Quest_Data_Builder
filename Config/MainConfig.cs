@@ -71,6 +71,8 @@ namespace Quest_Data_Builder.Config
         /// </summary>
         public static int StagesNumToAddQuestInfo = 1;
 
+        public static bool GenerateDialogueTopicRequirements = false;
+
         public static bool EnableHeightMapImageGeneration = false;
         public static double HeightMapImageDownscaleFactor = 2;
 
@@ -607,6 +609,11 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.heightMapImageDownscaleFactor is not null)
             {
                 HeightMapImageDownscaleFactor = (double)configData.heightMapImageDownscaleFactor;
+            }
+
+            if ((object)configData.generateDialogueTopicRequirements is not null)
+            {
+                GenerateDialogueTopicRequirements = (bool)configData.generateDialogueTopicRequirements;
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");

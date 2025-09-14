@@ -24,6 +24,11 @@ namespace Quest_Data_Builder.TES3.Quest
 
         public bool IsPlayerRequirement => Object == playerId;
 
+        /// <summary>
+        /// true if the requirement was created from SCVRVariable, false if it was created from TopicRecord or manually.
+        /// </summary>
+        public bool IsFunctionRequirement = false;
+
 
         const string playerId = "player";
 
@@ -46,6 +51,8 @@ namespace Quest_Data_Builder.TES3.Quest
 
         public QuestRequirement(SCVRVariable topicVariable)
         {
+            this.IsFunctionRequirement = true;
+
             if (checkPlayerRequirement(topicVariable))
             {
                 MakeAsPlayerRequirement();
