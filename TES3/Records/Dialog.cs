@@ -77,18 +77,37 @@ namespace Quest_Data_Builder.TES3.Records
 
         private void SortTopics()
         {
-            Topics.Sort((a, b) =>
+            if (Topics.Count <= 1) return;
+
+            var topics = Topics.ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
+
+            TopicRecord? head = Topics.FirstOrDefault(t => 
+                string.IsNullOrEmpty(t.PreviousId) || !topics.ContainsKey(t.PreviousId));
+
+            if (head == null) return;
+
+            var sorted = new List<TopicRecord>();
+            var current = head;
+            var hash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            while (current != null && !hash.Contains(current.Id))
             {
-                if (String.Equals(a.NextId, b.Id, StringComparison.OrdinalIgnoreCase))
-                    return -1;
-                else if (String.Equals(b.NextId, a.Id, StringComparison.OrdinalIgnoreCase))
-                    return 1;
-                else if (String.Equals(a.PreviousId, b.Id, StringComparison.OrdinalIgnoreCase))
-                    return 1;
-                else if (String.Equals(b.PreviousId, a.Id, StringComparison.OrdinalIgnoreCase))
-                    return -1;
-                return 0;
-            });
+                sorted.Add(current);
+                hash.Add(current.Id);
+
+                if (string.IsNullOrEmpty(current.NextId) || !topics.TryGetValue(current.NextId, out var next))
+                    break;
+
+                current = next;
+            }
+
+            if (sorted.Count < Topics.Count)
+            {
+                sorted.AddRange(Topics.Where(t => !hash.Contains(t.Id)));
+            }
+
+            Topics.Clear();
+            Topics.AddRange(sorted);
         }
 
 
