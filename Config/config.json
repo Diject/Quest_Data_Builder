@@ -56,7 +56,7 @@
 	"generateDialogueTopicRequirements": false,
 
 	//Enable or disable generation and saving of the height map image. Default is false.
-	"generateHeightMapImage": true,
+	"generateHeightMapImage": false,
 	//Downscale factor for height map image. 1 - full size (64x64 for one cell).
 	"heightMapImageDownscaleFactor": 2,
 
