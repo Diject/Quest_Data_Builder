@@ -71,6 +71,7 @@ namespace Quest_Data_Builder.Config
         /// </summary>
         public static int StagesNumToAddQuestInfo = 1;
 
+        public static bool GenerateQuestData = true;
         public static bool GenerateDialogueTopicRequirements = false;
 
         public static bool EnableHeightMapImageGeneration = false;
@@ -614,6 +615,11 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.generateDialogueTopicRequirements is not null)
             {
                 GenerateDialogueTopicRequirements = (bool)configData.generateDialogueTopicRequirements;
+            }
+
+            if ((object)configData.generateQuestData is not null)
+            {
+                GenerateQuestData = (bool)configData.generateQuestData;
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");
