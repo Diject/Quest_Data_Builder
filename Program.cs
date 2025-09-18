@@ -246,7 +246,7 @@ namespace Quest_Data_Builder
                 }
             }
 
-            if (MainConfig.EnableHeightMapImageGeneration)
+            if (MainConfig.GenerateHeightMapImage)
             {
                 try
                 {

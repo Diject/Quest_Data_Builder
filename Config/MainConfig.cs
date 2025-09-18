@@ -74,7 +74,7 @@ namespace Quest_Data_Builder.Config
         public static bool GenerateQuestData = true;
         public static bool GenerateDialogueTopicRequirements = false;
 
-        public static bool EnableHeightMapImageGeneration = false;
+        public static bool GenerateHeightMapImage = false;
         public static double HeightMapImageDownscaleFactor = 2;
 
         public static SerializerType OutputFormatType = SerializerType.Json;
@@ -602,9 +602,9 @@ namespace Quest_Data_Builder.Config
                 IgnoredDataFilePatterns = GetConfigListData((object)configData.ignoredDataFilePatterns, extension!);
             }
 
-            if ((object)configData.enableHeightMapImageGeneration is not null)
+            if ((object)configData.generateHeightMapImage is not null)
             {
-                EnableHeightMapImageGeneration = (bool)configData.enableHeightMapImageGeneration;
+                GenerateHeightMapImage = (bool)configData.generateHeightMapImage;
             }
 
             if ((object)configData.heightMapImageDownscaleFactor is not null)

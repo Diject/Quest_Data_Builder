@@ -70,8 +70,8 @@ This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 	//Generate a file with function/variable requirements needed for dialogue topics to become available.
 	"generateDialogueTopicRequirements": false,
 
-	//Enable generation and saving of the height map image
-	"enableHeightMapImageGeneration": false,
+	//Enable or disable generation and saving of the height map image. Default is false.
+	"generateHeightMapImage": false,
 	//Downscale factor for height map image. 1 - full size (64x64 for one cell).
 	"heightMapImageDownscaleFactor": 2,
 	
