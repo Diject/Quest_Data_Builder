@@ -185,55 +185,86 @@ namespace Quest_Data_Builder
                 CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
             }
 
-            CustomLogger.WriteLine(LogLevel.Text, "Processing quest data");
-            var dataProcessor = new QuestDataHandler(recordData[0]);
-
-            if (CustomLogger.Level >= LogLevel.Info)
+            if (MainConfig.GenerateQuestData)
             {
-                foreach (var dialog in recordData[0]!.Dialogs.ToList().FindAll((a) => a.Value.Type == DialogType.Journal && !dataProcessor.QuestContainigElements.ContainsKey(a.Value.Id)))
+
+                CustomLogger.WriteLine(LogLevel.Text, "Processing quest data");
+                var dataProcessor = new QuestDataHandler(recordData[0]);
+
+                if (CustomLogger.Level >= LogLevel.Info)
                 {
-                    CustomLogger.WriteLine(LogLevel.Info, $"found unused quest: \"{dialog.Value.Id}\"");
+                    foreach (var dialog in recordData[0]!.Dialogs.ToList().FindAll((a) => a.Value.Type == DialogType.Journal && !dataProcessor.QuestContainigElements.ContainsKey(a.Value.Id)))
+                    {
+                        CustomLogger.WriteLine(LogLevel.Info, $"found unused quest: \"{dialog.Value.Id}\"");
+                    }
+                }
+                if (CustomLogger.Level >= LogLevel.Info)
+                {
+                    foreach (var unfound in ConditionConverter.UnfoundCommands)
+                    {
+                        CustomLogger.WriteLine(LogLevel.Info, $"found strange condition command: \"{unfound}\"");
+                    }
+                }
+
+
+                var jsonSer = new DataSerializer(MainConfig.OutputFormatType, dataProcessor);
+
+                try
+                {
+                    Directory.CreateDirectory(MainConfig.OutputDirectory);
+
+                    CustomLogger.WriteLine(LogLevel.Text, $"Writing data to \"{Path.GetFullPath(MainConfig.OutputDirectory)}\"");
+
+                    File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests." + MainConfig.OutputFileFormat]), jsonSer.QuestData(),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                    File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText." + MainConfig.OutputFileFormat]), jsonSer.QuestByTopicText(),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                    File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects." + MainConfig.OutputFileFormat]), jsonSer.QuestObjects(),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                    File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables." + MainConfig.OutputFileFormat]), jsonSer.LocalVariableDataByScriptId(),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+
+                    if (MainConfig.GenerateDialogueTopicRequirements)
+                    {
+                        File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "dialogueTopics." + MainConfig.OutputFileFormat]), jsonSer.DialogueTopics(),
+                            MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                    }
+
+                    File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), DataSerializer.LuaAnnotations,
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                    File.WriteAllText(
+                        Path.Combine([MainConfig.OutputDirectory, "info." + MainConfig.OutputFileFormat]),
+                        new GeneratedDataInfo(MainConfig.Files, MainConfig.OutputFormatType).ToString(),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding
+                    );
+                }
+                catch (Exception ex)
+                {
+                    CustomLogger.RegisterErrorException(ex);
+                    CustomLogger.WriteLine(LogLevel.Error, "Error: failed to write data");
+                    CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
                 }
             }
-            if (CustomLogger.Level >= LogLevel.Info)
+
+            if (MainConfig.GenerateHeightMapImage)
             {
-                foreach (var unfound in ConditionConverter.UnfoundCommands)
+                try
                 {
-                    CustomLogger.WriteLine(LogLevel.Info, $"found strange condition command: \"{unfound}\"");
+                    var mapImageBuilder = new MapImageBuilder(recordData[0]);
+                    mapImageBuilder.BuildImage(Path.Combine(Path.GetFullPath(MainConfig.OutputDirectory), "map.png"));
+
+                    File.WriteAllText(
+                        Path.Combine([MainConfig.OutputDirectory, "mapInfo." + MainConfig.OutputFileFormat]),
+                        mapImageBuilder.GenerateInfo(MainConfig.OutputFormatType),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding
+                    );
                 }
-            }
-
-
-            var jsonSer = new DataSerializer(MainConfig.OutputFormatType, dataProcessor);
-
-            try
-            {
-                Directory.CreateDirectory(MainConfig.OutputDirectory);
-
-                CustomLogger.WriteLine(LogLevel.Text, $"Writing data to \"{Path.GetFullPath(MainConfig.OutputDirectory)}\"");
-
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "quests." + MainConfig.OutputFileFormat]), jsonSer.QuestData(),
-                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questByTopicText." + MainConfig.OutputFileFormat]), jsonSer.QuestByTopicText(),
-                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "questObjects." + MainConfig.OutputFileFormat]), jsonSer.QuestObjects(),
-                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables." + MainConfig.OutputFileFormat]), jsonSer.LocalVariableDataByScriptId(),
-                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
-
-                File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "luaAnnotations.lua"]), DataSerializer.LuaAnnotations,
-                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
-                File.WriteAllText(
-                    Path.Combine([MainConfig.OutputDirectory, "info." + MainConfig.OutputFileFormat]),
-                    new GeneratedDataInfo(MainConfig.Files, MainConfig.OutputFormatType).ToString(),
-                    MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding
-                );
-            }
-            catch (Exception ex)
-            {
-                CustomLogger.RegisterErrorException(ex);
-                CustomLogger.WriteLine(LogLevel.Error, "Error: failed to write data");
-                CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+                catch (Exception ex)
+                {
+                    CustomLogger.RegisterErrorException(ex);
+                    CustomLogger.WriteLine(LogLevel.Error, "Error: failed to build map image");
+                    CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
+                }
             }
 
             CustomLogger.WriteLine(LogLevel.Text, $"\nCompleted with {CustomLogger.Errors.Count} errors");

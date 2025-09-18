@@ -6,8 +6,6 @@ Quest Data Builder is a quest data generator for Morrowind, designed for use wit
 
 This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 
-The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) module, which is distributed under the Apache License 2.0. The license text is available at: [LICENSE](https://www.apache.org/licenses/LICENSE-2.0.html)
-
 ## Command-Line Arguments
 
 - `-l, --loglevel <LogLevel>`: Logging level (0-3). Default is 1.
@@ -68,6 +66,14 @@ The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) mod
 	"fractionDigits": 3,
 	//Number of stages in a quest (journal-type dialogue) for its information to be saved.
 	"stagesNumToAddQuestInfo": 1,
+
+	//Generate a file with function/variable requirements needed for dialogue topics to become available.
+	"generateDialogueTopicRequirements": false,
+
+	//Enable or disable generation and saving of the height map image. Default is false.
+	"generateHeightMapImage": false,
+	//Downscale factor for height map image. 1 - full size (64x64 for one cell).
+	"heightMapImageDownscaleFactor": 2,
 	
 	//Try to find information about dialogues that can open quest dialogues.
 	"findDialogueLinks": true,
@@ -77,3 +83,13 @@ The project uses the [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET) mod
 	"optimizeData": true
 }
 ```
+
+## Third-Party Libraries and Licenses
+
+This project uses the following third-party libraries:
+
+- [CXuesong.Luaon](https://github.com/CXuesong/Luaon.NET)  
+  Licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0.html).
+
+- [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp)  
+  Licensed under the [Six Labors Split License](https://github.com/SixLabors/ImageSharp/blob/main/LICENSE).  

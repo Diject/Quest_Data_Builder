@@ -52,6 +52,13 @@
 	//Number of stages in a quest (journal-type dialogue) for its information to be saved.
 	"stagesNumToAddQuestInfo": 1,
 
+	//Generate a file with function/variable requirements needed for dialogue topics to become available.
+	"generateDialogueTopicRequirements": false,
+
+	//Enable or disable generation and saving of the height map image. Default is false.
+	"generateHeightMapImage": false,
+	//Downscale factor for height map image. 1 - full size (64x64 for one cell).
+	"heightMapImageDownscaleFactor": 2,
 
 	//Try to find information about dialogues that can open quest dialogues.
 	"findDialogueLinks": true,

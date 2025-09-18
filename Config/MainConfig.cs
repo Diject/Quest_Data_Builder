@@ -71,6 +71,12 @@ namespace Quest_Data_Builder.Config
         /// </summary>
         public static int StagesNumToAddQuestInfo = 1;
 
+        public static bool GenerateQuestData = true;
+        public static bool GenerateDialogueTopicRequirements = false;
+
+        public static bool GenerateHeightMapImage = false;
+        public static double HeightMapImageDownscaleFactor = 2;
+
         public static SerializerType OutputFormatType = SerializerType.Json;
         public static string OutputFileFormat = "json";
 
@@ -594,6 +600,26 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.ignoredDataFilePatterns is not null)
             {
                 IgnoredDataFilePatterns = GetConfigListData((object)configData.ignoredDataFilePatterns, extension!);
+            }
+
+            if ((object)configData.generateHeightMapImage is not null)
+            {
+                GenerateHeightMapImage = (bool)configData.generateHeightMapImage;
+            }
+
+            if ((object)configData.heightMapImageDownscaleFactor is not null)
+            {
+                HeightMapImageDownscaleFactor = (double)configData.heightMapImageDownscaleFactor;
+            }
+
+            if ((object)configData.generateDialogueTopicRequirements is not null)
+            {
+                GenerateDialogueTopicRequirements = (bool)configData.generateDialogueTopicRequirements;
+            }
+
+            if ((object)configData.generateQuestData is not null)
+            {
+                GenerateQuestData = (bool)configData.generateQuestData;
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");

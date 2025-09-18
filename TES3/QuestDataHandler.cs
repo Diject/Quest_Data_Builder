@@ -14,7 +14,7 @@ namespace Quest_Data_Builder.TES3
 {
     internal partial class QuestDataHandler
     {
-        private readonly RecordDataHandler dataHandler;
+        public readonly RecordDataHandler dataHandler;
 
         /// <summary>
         /// Data about quest by its id
@@ -75,11 +75,11 @@ namespace Quest_Data_Builder.TES3
 
                 // the order should stay the same
                 this.FindQuestData();
-                this.FindRewardItems();
                 this.FindNextStages();
                 this.FindVariables(); // to find global variables
                 this.ExpandGlobalVariableRequirements();
                 this.FindQuestRecord();
+                this.FindRewardItems();
                 this.FindVariables(); // to find local variables in scripts and topics
                 this.FixRequirementVarialesType();
                 this.FindQuestObjectPositions();
