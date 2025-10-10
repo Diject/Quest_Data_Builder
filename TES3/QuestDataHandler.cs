@@ -707,6 +707,19 @@ namespace Quest_Data_Builder.TES3
                         topicActor = topic.Actor;
                     }
 
+                    if (topicResponse is null || topicActor is null)
+                    {
+                        state.Break();
+                        return;
+                    }
+
+                    actorsDialogues.TryGetValue(topicActor!, out var actorDialogueIds);
+                    if (actorDialogueIds is null)
+                    {
+                        state.Break();
+                        return;
+                    }
+
                     if (!String.IsNullOrEmpty(topicResult))
                     {
                         var matches = AddTopicRegex().Matches(topicResult);
@@ -734,12 +747,7 @@ namespace Quest_Data_Builder.TES3
                         }
                     }
 
-                    if (topicResponse is null || topicActor is null) state.Break();
-
-                    actorsDialogues.TryGetValue(topicActor!, out var actorDialogueIds);
-                    if (actorDialogueIds is null) state.Break();
-
-                    foreach (var actorDiaId in actorDialogueIds!)
+                    foreach (var actorDiaId in actorDialogueIds)
                     {
                         if (topicResponse!.Contains(actorDiaId, StringComparison.OrdinalIgnoreCase))
                         {
