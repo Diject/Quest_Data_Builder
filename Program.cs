@@ -6,6 +6,8 @@ using Quest_Data_Builder.TES3;
 using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Script;
 using Quest_Data_Builder.TES3.Serializer;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -258,6 +260,20 @@ namespace Quest_Data_Builder
                         mapImageBuilder.GenerateInfo(MainConfig.OutputFormatType),
                         MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding
                     );
+
+                    if (Directory.Exists("Maps"))
+                    {
+                        foreach (var file in Directory.GetFiles("Maps"))
+                        {
+                            var match = Regex.Match(file, @"\(([+-]?\d+),([+-]?\d+)\)\.bmp$");
+                            if (!match.Success) continue;
+
+                            using var image = Image.Load(file);
+                            var mapDir = Path.Combine(MainConfig.OutputDirectory, "Maps");
+                            Directory.CreateDirectory(mapDir);
+                            image.Save(Path.Combine(mapDir, $"{match.Groups[1]},{match.Groups[2]}.png"), new PngEncoder());
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

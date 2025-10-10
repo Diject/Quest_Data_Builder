@@ -74,7 +74,7 @@ namespace Quest_Data_Builder.Config
         public static bool GenerateQuestData = true;
         public static bool GenerateDialogueTopicRequirements = false;
 
-        public static bool GenerateHeightMapImage = false;
+        public static bool GenerateHeightMapImage = true;
         public static double HeightMapImageDownscaleFactor = 2;
 
         public static SerializerType OutputFormatType = SerializerType.Json;
