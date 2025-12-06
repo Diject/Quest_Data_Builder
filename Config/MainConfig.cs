@@ -348,45 +348,51 @@ namespace Quest_Data_Builder.Config
                     }
                 }
 
-
-                CustomLogger.WriteLine(LogLevel.Text, "\nSelect output format for data files:");
-                CustomLogger.WriteLine(LogLevel.Text, "1. JSON (MWSE)");
-                CustomLogger.WriteLine(LogLevel.Text, "2. YAML (OpenMW)");
-                CustomLogger.WriteLine(LogLevel.Text, "3. Lua");
-                CustomLogger.WriteLine(LogLevel.Text, "\nEnter the number of the output format, or 'q' to quit:");
-                for (; ;)
+                if (GenerateQuestData)
                 {
-                    string? formatInput = Console.ReadLine();
-                    if (formatInput is null || formatInput.Trim().ToLower() == "q")
+                    CustomLogger.WriteLine(LogLevel.Text, "\nSelect output format for data files:");
+                    CustomLogger.WriteLine(LogLevel.Text, "1. JSON (MWSE)");
+                    CustomLogger.WriteLine(LogLevel.Text, "2. YAML (OpenMW)");
+                    CustomLogger.WriteLine(LogLevel.Text, "3. Lua");
+                    CustomLogger.WriteLine(LogLevel.Text, "\nEnter the number of the output format, or 'q' to quit:");
+                    for (; ; )
                     {
-                        CustomLogger.WriteLine(LogLevel.Text, "\nExiting initialization.");
-                        return false;
-                    }
-
-                    if (int.TryParse(formatInput, out int formatChoice) && formatChoice > 0 && formatChoice <= 3)
-                    {
-                        OutputFormatType = formatChoice switch
+                        string? formatInput = Console.ReadLine();
+                        if (formatInput is null || formatInput.Trim().ToLower() == "q")
                         {
-                            1 => SerializerType.Json,
-                            2 => SerializerType.Yaml,
-                            3 => SerializerType.Lua,
-                            _ => SerializerType.Json,
-                        };
-                        OutputFileFormat = formatChoice switch
-                        {
-                            1 => "json",
-                            2 => "yaml",
-                            3 => "lua",
-                            _ => "json",
-                        };
+                            CustomLogger.WriteLine(LogLevel.Text, "\nExiting initialization.");
+                            return false;
+                        }
 
-                        CustomLogger.WriteLine(LogLevel.Text, $"\nSelected output format: {OutputFileFormat}");
-                        return true;
+                        if (int.TryParse(formatInput, out int formatChoice) && formatChoice > 0 && formatChoice <= 3)
+                        {
+                            OutputFormatType = formatChoice switch
+                            {
+                                1 => SerializerType.Json,
+                                2 => SerializerType.Yaml,
+                                3 => SerializerType.Lua,
+                                _ => SerializerType.Json,
+                            };
+                            OutputFileFormat = formatChoice switch
+                            {
+                                1 => "json",
+                                2 => "yaml",
+                                3 => "lua",
+                                _ => "json",
+                            };
+
+                            CustomLogger.WriteLine(LogLevel.Text, $"\nSelected output format: {OutputFileFormat}");
+                            return true;
+                        }
+                        else
+                        {
+                            CustomLogger.WriteLine(LogLevel.Error, "\nInvalid choice. Please try again.");
+                        }
                     }
-                    else
-                    {
-                        CustomLogger.WriteLine(LogLevel.Error, "\nInvalid choice. Please try again.");
-                    }
+                }
+                else
+                {
+                    return true;
                 }
             }
 

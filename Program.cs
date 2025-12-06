@@ -250,6 +250,11 @@ namespace Quest_Data_Builder
             {
                 try
                 {
+                    if (!Directory.Exists(MainConfig.OutputDirectory))
+                    {
+                        Directory.CreateDirectory(MainConfig.OutputDirectory);
+                    }
+
                     var mapImageBuilder = new MapImageBuilder(recordData[0]);
                     mapImageBuilder.BuildImage(Path.Combine(Path.GetFullPath(MainConfig.OutputDirectory), "map.png"));
 
