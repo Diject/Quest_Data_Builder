@@ -1,5 +1,6 @@
 ﻿using Quest_Data_Builder.Config;
 using Quest_Data_Builder.Extentions;
+using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
 using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
@@ -335,9 +336,18 @@ namespace Quest_Data_Builder.TES3.Serializer
             }
 
             var table = newTable();
+            var processedKeys = new HashSet<string>();
 
             foreach (var objectItem in questObjects)
             {
+                string key = objectItem.Key.ToLower();
+                // TODO: Investigate why duplicates happen
+                if (!processedKeys.Add(key))
+                {
+                    CustomLogger.WriteLine(LogLevel.Warn, $"Found duplicate key \"{objectItem.Key}\" in QuestObjects, skipping...");
+                    continue;
+                }
+
                 var objectTable = newTable();
                 objectTable.Add("type", (int)objectItem.Value.Type);
 
@@ -482,7 +492,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                     objectTable.Add("links", containedArray);
                 }
 
-                table.Add(objectItem.Key.ToLower(), objectTable);
+                table.Add(key, objectTable);
             }
 
             return getResult(table);
