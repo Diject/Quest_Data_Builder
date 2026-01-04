@@ -57,13 +57,12 @@ namespace Quest_Data_Builder.TES3.Serializer
             ImageWidth = (MaxGridX - MinGridX + 1) * 64;
             ImageHeight = (MaxGridY - MinGridY + 1) * 64;
 
-            var color = new Rgb24(36, 53, 48);
             using var image = new Image<Rgb24>(ImageWidth, ImageHeight);
 
-            Rgb24 defaultColor = GetColorForHeight(-1024);
+            Rgb24 defaultColor = GetColorForHeight(-8192);
             for (int y = 0; y < ImageHeight; y++)
                 for (int x = 0; x < ImageWidth; x++)
-                    image[x, y] = color;
+                    image[x, y] = defaultColor;
 
 
             foreach (var land in _dataHandler.Lands.Values)
@@ -125,6 +124,14 @@ namespace Quest_Data_Builder.TES3.Serializer
             table.Add("gridX", gridXTable);
             table.Add("gridY", gridYTable);
 
+            var colorArr = serializer.NewArray();
+            var col = GetColorForHeight(-8192).ToScaledVector4();
+            colorArr.Add(col.X);
+            colorArr.Add(col.Y);
+            colorArr.Add(col.Z);
+
+            table.Add("bColor", colorArr);
+
             return serializer.GetResult(table);
         }
 
@@ -134,7 +141,8 @@ namespace Quest_Data_Builder.TES3.Serializer
             float r, g, b;
             float heightData = height / 8;
             float clippedData = heightData / 2048;
-            clippedData = Math.Clamp(clippedData, -1.0f, 1.0f);
+            // I don't know why, but negative heights need to be multiplied by 8 to match the game colors
+            clippedData = Math.Clamp(heightData < 0f ? clippedData * 8f : clippedData, -1.0f, 1.0f);
 
             if (heightData >= 0.0f)
             {
