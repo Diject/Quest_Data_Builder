@@ -54,15 +54,21 @@ namespace Quest_Data_Builder.TES3.Serializer
             MinGridX -= 1;
             MinGridY -= 1;
 
-            ImageWidth = (MaxGridX - MinGridX + 1) * 64;
-            ImageHeight = (MaxGridY - MinGridY + 1) * 64;
+            int imageWidth = (MaxGridX - MinGridX + 1) * 64;
+            int imageHeight = (MaxGridY - MinGridY + 1) * 64;
 
-            using var image = new Image<Rgb24>(ImageWidth, ImageHeight);
+            using var image = new Image<Rgb24>(imageWidth, imageHeight);
+            using var mask = new Image<L8>(imageWidth, imageHeight);
 
             Rgb24 defaultColor = GetColorForHeight(-8192);
-            for (int y = 0; y < ImageHeight; y++)
-                for (int x = 0; x < ImageWidth; x++)
+            for (int y = 0; y < imageHeight; y++)
+            {
+                for (int x = 0; x < imageWidth; x++)
+                {
                     image[x, y] = defaultColor;
+                    mask[x, y] = new L8(0);
+                }
+            }
 
 
             foreach (var land in _dataHandler.Lands.Values)
@@ -75,20 +81,77 @@ namespace Quest_Data_Builder.TES3.Serializer
                     {
                         int imX = 64 * (-MinGridX + land.GridX) + x;
                         int imY = 64 * (-MinGridY + land.GridY) + y;
-                        image[imX, ImageHeight - imY - 1] = GetColorForHeight(land.Heights[x, y]);
+                        float h = land.Heights[x, y];
+                        image[imX, imageHeight - imY - 1] = GetColorForHeight(h);
+
+                        if (h >= 0f)
+                            mask[imX, imageHeight - imY - 1] = new L8(255);
                     }
                 }
             }
 
-            ImageHeight = PixelsPerCell * (MaxGridY - MinGridY + 1);
-            ImageWidth = PixelsPerCell * (MaxGridX - MinGridX + 1);
+            imageHeight = PixelsPerCell * (MaxGridY - MinGridY + 1);
+            imageWidth = PixelsPerCell * (MaxGridX - MinGridX + 1);
 
             image.Mutate(ctx => ctx.Resize(new ResizeOptions
             {
-                Size = new Size(ImageWidth, ImageHeight),
+                Size = new Size(imageWidth, imageHeight),
                 Sampler = KnownResamplers.Triangle,
                 Mode = ResizeMode.Max
             }));
+
+            if (MainConfig.HeightMapImageDrawOutline)
+            {
+                mask.Mutate(ctx => ctx.Resize(new ResizeOptions
+                {
+                    Size = new Size(imageWidth, imageHeight),
+                    Sampler = KnownResamplers.NearestNeighbor,
+                    Mode = ResizeMode.Max
+                }));
+
+
+                int stroke = Math.Max(1, MainConfig.HeightMapImageOutlineThickness);
+                var border = new bool[imageWidth * imageHeight];
+                for (int y = 0; y < imageHeight; y++)
+                {
+                    for (int x = 0; x < imageWidth; x++)
+                    {
+                        if (mask[x, y].PackedValue == 0) continue;
+                        bool isBorder = false;
+                        if (x == 0 || mask[x - 1, y].PackedValue == 0) isBorder = true;
+                        else if (x == imageWidth - 1 || mask[x + 1, y].PackedValue == 0) isBorder = true;
+                        else if (y == 0 || mask[x, y - 1].PackedValue == 0) isBorder = true;
+                        else if (y == imageHeight - 1 || mask[x, y + 1].PackedValue == 0) isBorder = true;
+
+                        border[y * imageWidth + x] = isBorder;
+                    }
+                }
+
+                Rgb24 borderColor = GetColorForHeight(16384);
+                for (int y = 0; y < imageHeight; y++)
+                {
+                    for (int x = 0; x < imageWidth; x++)
+                    {
+                        if (!border[y * imageWidth + x]) continue;
+
+                        int minX = Math.Max(0, x - stroke);
+                        int maxX = Math.Min(imageWidth - 1, x);
+                        int minY = Math.Max(0, y - stroke);
+                        int maxY = Math.Min(imageHeight - 1, y);
+
+                        for (int yy = minY; yy <= maxY; yy++)
+                        {
+                            for (int xx = minX; xx <= maxX; xx++)
+                            {
+                                image[xx, yy] = borderColor;
+                            }
+                        }
+                    }
+                }
+            }
+
+            ImageWidth = imageWidth;
+            ImageHeight = imageHeight;
 
             CustomLogger.WriteLine(LogLevel.Text, $"Saving map image to {filepath}");
 

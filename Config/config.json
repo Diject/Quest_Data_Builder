@@ -59,6 +59,10 @@
 	"generateHeightMapImage": false,
 	//Downscale factor for height map image. 1 - full size (64x64 for one cell).
 	"heightMapImageDownscaleFactor": 2,
+	//Draw outline around landmasses.
+	"heightMapImageDrawOutline": false,
+	//Outline thickness in pixels.
+	"heightMapImageOutlineThickness": 1,
 
 	//Try to find information about dialogues that can open quest dialogues.
 	"findDialogueLinks": true,
