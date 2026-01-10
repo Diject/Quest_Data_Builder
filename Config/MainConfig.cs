@@ -76,6 +76,8 @@ namespace Quest_Data_Builder.Config
 
         public static bool GenerateHeightMapImage = false;
         public static double HeightMapImageDownscaleFactor = 2;
+        public static bool HeightMapImageDrawOutline = false;
+        public static int HeightMapImageOutlineThickness = 1;
 
         public static SerializerType OutputFormatType = SerializerType.Json;
         public static string OutputFileFormat = "json";
@@ -626,6 +628,16 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.generateQuestData is not null)
             {
                 GenerateQuestData = (bool)configData.generateQuestData;
+            }
+
+            if ((object)configData.heightMapImageDrawOutline is not null)
+            {
+                HeightMapImageDrawOutline = (bool)configData.heightMapImageDrawOutline;
+            }
+
+            if ((object)configData.heightMapImageOutlineThickness is not null)
+            {
+                HeightMapImageOutlineThickness = (int)configData.heightMapImageOutlineThickness;
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");

@@ -256,7 +256,7 @@ namespace Quest_Data_Builder
                     }
 
                     var mapImageBuilder = new MapImageBuilder(recordData[0]);
-                    mapImageBuilder.BuildImage(Path.Combine(Path.GetFullPath(MainConfig.OutputDirectory), "map.png"));
+                    mapImageBuilder.BuildImage(Path.GetFullPath(MainConfig.OutputDirectory));
 
                     File.WriteAllText(
                         Path.Combine([MainConfig.OutputDirectory, "mapInfo." + MainConfig.OutputFileFormat]),
