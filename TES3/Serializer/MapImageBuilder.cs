@@ -211,7 +211,7 @@ namespace Quest_Data_Builder.TES3.Serializer
             CustomSerializer serializer = new CustomSerializer(format);
             var table = serializer.NewTable();
 
-            table.Add("version", version);
+            table.Add("version", MainConfig.HeightMapSaveAsTiles ? 2 : 1);
             table.Add("time", (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalSeconds);
             if (!MainConfig.HeightMapSaveAsTiles) table.Add("file", "map.png");
             table.Add("width", ImageWidth);
