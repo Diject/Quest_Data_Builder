@@ -61,8 +61,10 @@
 	"heightMapImageDownscaleFactor": 2,
 	//Draw outline around landmasses.
 	"heightMapImageDrawOutline": false,
-	//Outline thickness in pixels.
+	//Outline thickness.
 	"heightMapImageOutlineThickness": 1,
+	//Save height map as individual tiles (one image per 16x16 cells) instead of one big image.
+	"heightMapSaveAsTiles": false,
 
 	//Try to find information about dialogues that can open quest dialogues.
 	"findDialogueLinks": true,

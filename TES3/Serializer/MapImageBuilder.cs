@@ -159,42 +159,49 @@ namespace Quest_Data_Builder.TES3.Serializer
 
             CustomLogger.WriteLine(LogLevel.Text, $"Saving map image to {directory}");
 
-            foreach (var blockX in populatedBlocks.Keys)
+            if (MainConfig.HeightMapSaveAsTiles)
             {
-                foreach (var blockY in populatedBlocks[blockX].Keys)
+                foreach (var blockX in populatedBlocks.Keys)
                 {
-                    int startX = (blockX * 16 - MinGridX) * PixelsPerCell;
-                    int startY = (blockY * 16 - MinGridY) * PixelsPerCell;
-                    int endX = startX + 16 * PixelsPerCell - 1;
-                    int endY = startY + 16 * PixelsPerCell - 1;
-                    
-                    int blockWidth = endX - startX + 1;
-                    int blockHeight = endY - startY + 1;
-
-                    int topStartY = image.Height - startY - blockHeight;
-                    var cropRect = new Rectangle(startX, topStartY, blockWidth, blockHeight);
-                    var bounds = new Rectangle(0, 0, image.Width, image.Height);
-                    var intersection = Rectangle.Intersect(cropRect, bounds);
-
-                    using Image<Rgb24> blockImage = new Image<Rgb24>(blockWidth, blockHeight);
-                    for (int x = 0; x < blockWidth; x++)
+                    foreach (var blockY in populatedBlocks[blockX].Keys)
                     {
-                        for (int y = 0; y < blockHeight; y++)
+                        int startX = (blockX * 16 - MinGridX) * PixelsPerCell;
+                        int startY = (blockY * 16 - MinGridY) * PixelsPerCell;
+                        int endX = startX + 16 * PixelsPerCell - 1;
+                        int endY = startY + 16 * PixelsPerCell - 1;
+
+                        int blockWidth = endX - startX + 1;
+                        int blockHeight = endY - startY + 1;
+
+                        int topStartY = image.Height - startY - blockHeight;
+                        var cropRect = new Rectangle(startX, topStartY, blockWidth, blockHeight);
+                        var bounds = new Rectangle(0, 0, image.Width, image.Height);
+                        var intersection = Rectangle.Intersect(cropRect, bounds);
+
+                        using Image<Rgb24> blockImage = new Image<Rgb24>(blockWidth, blockHeight);
+                        for (int x = 0; x < blockWidth; x++)
                         {
-                            blockImage[x, y] = backgroundColor;
+                            for (int y = 0; y < blockHeight; y++)
+                            {
+                                blockImage[x, y] = backgroundColor;
+                            }
                         }
-                    }
 
-                    if (intersection.Width > 0 && intersection.Height > 0)
-                    {
-                        using var sourceCrop = image.Clone(ctx => ctx.Crop(intersection));
-                        int destX = intersection.X - startX;
-                        int destY = intersection.Y - topStartY;
-                        blockImage.Mutate(ctx => ctx.DrawImage(sourceCrop, new Point(destX, destY), 1f));
-                    }
+                        if (intersection.Width > 0 && intersection.Height > 0)
+                        {
+                            using var sourceCrop = image.Clone(ctx => ctx.Crop(intersection));
+                            int destX = intersection.X - startX;
+                            int destY = intersection.Y - topStartY;
+                            blockImage.Mutate(ctx => ctx.DrawImage(sourceCrop, new Point(destX, destY), 1f));
+                        }
 
-                    blockImage.SaveAsPng(Path.Combine(directory, $"({blockX},{blockY}).png"));
+                        blockImage.SaveAsPng(Path.Combine(directory, $"({blockX},{blockY}).png"));
+                    }
                 }
+            }
+            else
+            {
+                image.SaveAsPng(Path.Combine(directory, "map.png"));
             }
         }
 
@@ -206,6 +213,7 @@ namespace Quest_Data_Builder.TES3.Serializer
 
             table.Add("version", version);
             table.Add("time", (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalSeconds);
+            if (!MainConfig.HeightMapSaveAsTiles) table.Add("file", "map.png");
             table.Add("width", ImageWidth);
             table.Add("height", ImageHeight);
             table.Add("pixelsPerCell", (int)PixelsPerCell);
