@@ -132,6 +132,27 @@ namespace Quest_Data_Builder.Core
                 if (bt == '\0')
                     break;
 
+                // Use a 3 byte array to prevent false positive virus detection
+                var arr = new char[3];
+                if (Encoding.TryGetChars(new byte[] { bt }, arr, out var count) && count > 0)
+                {
+                    str += arr[0];
+                }
+            }
+
+            return str.TrimEnd('\0');
+        }
+
+        public string ReadLimitedNullTerminatedString(int maxLength)
+        {
+            string str = "";
+            for (int i = 0; i < maxLength; i++)
+            {
+                byte bt = _reader.ReadByte();
+                if (bt == '\0')
+                    break;
+
+                // Use a 3 byte array to prevent false positive virus detection
                 var arr = new char[3];
                 if (Encoding.TryGetChars(new byte[] { bt }, arr, out var count) && count > 0)
                 {

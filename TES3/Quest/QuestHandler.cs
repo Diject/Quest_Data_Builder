@@ -25,21 +25,31 @@ namespace Quest_Data_Builder.TES3.Quest
 
             Id = dialog.Id;
 
-            foreach (var topic in dialog.Topics) 
+            foreach (var topic in dialog.Topics)
             {
                 if (topic.QuestName == true)
                 {
                     this.Name = topic.Response;
-                    continue;
+                    break;
                 }
-                if (!Stages.TryAdd((uint)topic.Index!, new QuestStage(topic)))
-                {
-                    CustomLogger.WriteLine(LogLevel.Warn, $"dialogue \"{dialog.Id}\" has several \"{topic.Index}\" indexes");
-                    Stages[(uint)topic.Index!] = new QuestStage(topic);
-                }
+                //if (!Stages.TryAdd((uint)topic.Index!, new QuestStage(topic)))
+                //{
+                //    CustomLogger.WriteLine(LogLevel.Warn, $"dialogue \"{dialog.Id}\" has several \"{topic.Index}\" indexes");
+                //    Stages[(uint)topic.Index!] = new QuestStage(topic);
+                //}
             }
 
             CustomLogger.WriteLine(LogLevel.Info, $"new quest handler {Id}");
+        }
+
+
+        public void AddStage(QuestStage stage)
+        {
+            if (!Stages.TryAdd(stage.Index, stage))
+            {
+                CustomLogger.WriteLine(LogLevel.Warn, $"quest \"{Id}\" has several \"{stage.Index}\" indexes");
+                Stages[stage.Index] = stage;
+            }
         }
     }
 

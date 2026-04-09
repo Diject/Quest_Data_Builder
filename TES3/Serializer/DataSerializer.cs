@@ -1,10 +1,12 @@
-﻿using Quest_Data_Builder.Config;
+﻿using ConcurrentCollections;
+using Quest_Data_Builder.Config;
 using Quest_Data_Builder.Extentions;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Cell;
 using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
 using Quest_Data_Builder.TES3.Script;
+using System.Collections.Concurrent;
 
 namespace Quest_Data_Builder.TES3.Serializer
 {
@@ -146,7 +148,7 @@ namespace Quest_Data_Builder.TES3.Serializer
             if (requirement.Skill is not null)
                 subTable.Add("skill", requirement.Skill);
 
-            if (requirement.Script is not null)
+            if (requirement.Script is not null && ignoreUnnecessary is null)
                 subTable.Add("script", requirement.Script.ToLower());
 
             if (requirement.Text is not null)
@@ -156,17 +158,20 @@ namespace Quest_Data_Builder.TES3.Serializer
         }
 
 
-        private dynamic serializeRequirements(QuestRequirementList requirements, bool? ignoreUnnecessary)
+        private bool serializeRequirements(QuestRequirementList requirements, dynamic requirementArray, bool? ignoreUnnecessary = null)
         {
-            var requirementTable = newArray();
+            bool res = false;
             foreach (var requirement in requirements)
             {
                 var reqTable = serializeRequirement(requirement, ignoreUnnecessary);
                 if (reqTable is not null)
-                    requirementTable.Add(reqTable);
+                {
+                    requirementArray.Add(reqTable);
+                    res = true;
+                }
             }
 
-            return requirementTable;
+            return res;
         }
 
 
@@ -212,6 +217,16 @@ namespace Quest_Data_Builder.TES3.Serializer
                     questTable.Add("links", linkedArr);
                 }
 
+                if (questItem.Value.Givers.Count > 0)
+                {
+                    var giversArr = newArray();
+                    foreach (var giverIs in questItem.Value.Givers)
+                    {
+                        giversArr.Add(giverIs.ToLower());
+                    }
+                    questTable.Add("givers",  giversArr);
+                }
+
                 if (questItem.Value.Stages.Any(a => a.Value.IsFinished == true))
                 {
                     questTable.Add("hasFinished", true);
@@ -230,19 +245,41 @@ namespace Quest_Data_Builder.TES3.Serializer
                     if (stageItem.Value.IsRestart)
                         stageTable.Add("restart", true);
 
+                    // TODO: move this to proper place
+                    stageItem.Value.Requirements.RemoveDuplicates();
+
                     var requirementsTable = newArray();
                     foreach (var requirements in stageItem.Value.Requirements)
                     {
-                        requirementsTable.Add(serializeRequirements(requirements, false));
+                        var reqArr = newArray();
+                        if (serializeRequirements(requirements, reqArr))
+                            requirementsTable.Add(reqArr);
                     }
                     stageTable.Add("requirements", requirementsTable);
 
                     var nextIdsTable = newArray();
                     foreach (var nextStage in stageItem.Value.NextStages)
                     {
-                        nextIdsTable.Add(nextStage.Index);
+                        if (nextStage.Parent.Id == stageItem.Value.Parent.Id)
+                        {
+                            nextIdsTable.Add(nextStage.Index);
+                        }
                     }
                     stageTable.Add("next", nextIdsTable);
+
+                    if (stageItem.Value.LinkedStages.Count > 0)
+                    {
+                        var linekdTable = newArray();
+                        foreach (var linkedStage in stageItem.Value.LinkedStages)
+                        {
+                            var arr = newArray();
+                            arr.Add(linkedStage.Parent.Id.ToLower());
+                            arr.Add(linkedStage.Index);
+                            linekdTable.Add(arr);
+                        }
+
+                        stageTable.Add("linked", linekdTable);
+                    }
 
                     var nextKeyIndex = stages.IndexOfKey(stageItem.Key) + 1;
                     if (nextKeyIndex >= 0 && nextKeyIndex < stages.Values.Count)
@@ -341,6 +378,11 @@ namespace Quest_Data_Builder.TES3.Serializer
             foreach (var objectItem in questObjects)
             {
                 string key = objectItem.Key.ToLower();
+                var objData = objectItem.Value;
+
+                if (MainConfig.RemoveUnused && objData.InvolvedQuestStages.IsEmpty &&
+                    objData.Contains.IsEmpty && objData.Links.IsEmpty && objData.Positions.IsEmpty) continue;
+
                 // TODO: Investigate why duplicates happen
                 if (!processedKeys.Add(key))
                 {
@@ -349,27 +391,31 @@ namespace Quest_Data_Builder.TES3.Serializer
                 }
 
                 var objectTable = newTable();
-                objectTable.Add("type", (int)objectItem.Value.Type);
+                objectTable.Add("type", (int)objData.Type);
 
-                if (objectItem.Value.Starts.Count > 0)
+                if (objData.Starts.Count > 0)
                 {
                     var starts = newArray();
-                    foreach (var quest in objectItem.Value.Starts)
+                    foreach (var quest in objData.Starts)
                     {
                         starts.Add(quest.Id.ToLower());
                     }
                     objectTable.Add("starts",  starts);
                 }
 
-                var stagesTable = newArray();
-                foreach (var questInfo in objectItem.Value.InvolvedQuestStages)
+                if (!objData.InvolvedQuestStages.IsEmpty &&
+                    objData.Type != QuestObjectType.Dialog && objData.Type != QuestObjectType.Local)
                 {
-                    var subTable = newTable();
-                    subTable.Add("id", questInfo.Item1.ToLower());
-                    subTable.Add("index", questInfo.Item2);
-                    stagesTable.Add(subTable);
+                    var stagesTable = newArray();
+                    foreach (var questInfo in objData.InvolvedQuestStages)
+                    {
+                        var subTable = newTable();
+                        subTable.Add("id", questInfo.Item1.ToLower());
+                        subTable.Add("index", questInfo.Item2);
+                        stagesTable.Add(subTable);
+                    }
+                    objectTable.Add("stages", stagesTable);
                 }
-                objectTable.Add("stages", stagesTable);
 
                 if (objectPositionById.TryGetValue(objectItem.Key, out var objPos))
                 {
@@ -404,7 +450,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                     objectTable.Add("inWorld", objPos.Count);
 
                     double normalized = 0;
-                    foreach (var link in objectItem.Value.Links)
+                    foreach (var link in objData.Links)
                     {
                         if (questObjects.TryGetValue(link.Key, out var obj))
                         {
@@ -412,7 +458,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                         }
                     }
 
-                    objectTable.Add("total", objectItem.Value.TotalCount);
+                    objectTable.Add("total", objData.TotalCount);
                     if (_type == SerializerType.Lua)
                     {
                         objectTable.Add("norm", Math.Round((objPos.Count + normalized), 2));
@@ -430,62 +476,68 @@ namespace Quest_Data_Builder.TES3.Serializer
                     objectTable.Add("inWorld", 0);
 
                     double normalized = 0;
-                    foreach (var itemCount in objectItem.Value.Links.Values)
+                    foreach (var itemCount in objData.Links.Values)
                         normalized += itemCount.Count * itemCount.Chance;
 
-                    objectTable.Add("total", (int)Math.Round(objectItem.Value.TotalCount + normalized));
-                    if (_type == SerializerType.Lua)
-                    {
-                        objectTable.Add("norm", Math.Round(normalized, 2));
-                    }
-                    else
-                    {
-                        objectTable.Add("norm", Math.Round((decimal)normalized, 2));
-                    }
+                    var total = objData.TotalCount + normalized;
+                    if (total > 0)
+                        objectTable.Add("total", (int)Math.Round(total));
+
+                    if (normalized > 0)
+                        if (_type == SerializerType.Lua)
+                        {
+                            objectTable.Add("norm", Math.Round(normalized, 2));
+                        }
+                        else
+                        {
+                            objectTable.Add("norm", Math.Round((decimal)normalized, 2));
+                        }
                 }
 
-                if (objectItem.Value.Contains.Count > 0)
+                if (!objData.Contains.IsEmpty && objData.Type != QuestObjectType.Local)
                 {
                     var containedArray = newArray();
 
-                    var list = objectItem.Value.Contains.Select(a =>
+                    var list = objData.Contains.Select(a =>
                         new Tuple<string, decimal, double>(a.Key, Math.Round((decimal)a.Value.Chance, MainConfig.RoundFractionalDigits), a.Value.Chance)).ToList();
                     foreach (var tuple in list.OrderByDescending(a => a.Item3 == 0 ? uint.MaxValue : a.Item2))
                     {
                         var arr = newArray();
                         arr.Add(tuple.Item1.ToLower());
-                        if (_type == SerializerType.Lua)
-                        {
-                            arr.Add((double)tuple.Item2);
-                        }
-                        else
-                        {
-                            arr.Add(tuple.Item2);
-                        }
+                        if (tuple.Item2 != 0)
+                            if (_type == SerializerType.Lua)
+                            {
+                                arr.Add((double)tuple.Item2);
+                            }
+                            else
+                            {
+                                arr.Add(tuple.Item2);
+                            }
                         containedArray.Add(arr);
                     }
 
                     objectTable.Add("contains", containedArray);
                 }
 
-                if (objectItem.Value.Links.Count > 0)
+                if (!objData.Links.IsEmpty)
                 {
                     var containedArray = newArray();
 
-                    var list = objectItem.Value.Links.Select(a =>
+                    var list = objData.Links.Select(a =>
                         new Tuple<string, decimal, double>(a.Key, Math.Round((decimal)a.Value.Chance, MainConfig.RoundFractionalDigits), a.Value.Chance)).ToList();
                     foreach (var tuple in list.OrderByDescending(a => a.Item3 == 0 ? uint.MaxValue : a.Item2))
                     {
                         var arr = newArray();
                         arr.Add(tuple.Item1.ToLower());
-                        if (_type == SerializerType.Lua)
-                        {
-                            arr.Add((double)tuple.Item2);
-                        }
-                        else
-                        {
-                            arr.Add(tuple.Item2);
-                        }
+                        if (tuple.Item2 != 0)
+                            if (_type == SerializerType.Lua)
+                            {
+                                arr.Add((double)tuple.Item2);
+                            }
+                            else
+                            {
+                                arr.Add(tuple.Item2);
+                            }
                         containedArray.Add(arr);
                     }
 
@@ -578,45 +630,125 @@ namespace Quest_Data_Builder.TES3.Serializer
         public string LocalVariableDataByScriptId()
         {
             var data = dataHandler.VariablesByScriptId;
+            var questObjects = dataHandler.QuestObjects;
 
             var table = newTable();
 
             foreach (var scriptItem in data)
             {
                 var varsTable = newTable();
+                bool isAdded = false;
 
                 foreach (var varsItem in scriptItem.Value)
                 {
+                    questObjects.TryGetValue(varsItem.Key, out var qObj);
+                    if (MainConfig.OptimizeData && qObj is null) continue;
+
                     var varTable = newTable();
 
                     varTable.Add("type", (int)varsItem.Value.Type);
 
-                    Dictionary<string, List<QuestRequirementList>> results = new();
+                    ConcurrentDictionary<string, List<QuestRequirementList>> results = new();
                     foreach (var varData in varsItem.Value)
                     {
                         if (varData.Requirements is null) continue;
 
-                        results.TryAdd(varData.ValueStr.ToLower(), new());
-                        results[varData.ValueStr.ToLower()].Add(varData.Requirements);
+                        if (MainConfig.OptimizeData && !qObj!.AdditionalData.ContainsKey(varData.ValueStr))
+                        {
+                            continue;
+                        }
+
+                        var reqList = results.GetOrAdd(varData.ValueStr.ToLower(), new List<QuestRequirementList>());
+                        if (!reqList.Exists(a => a.Equals(varData.Requirements)))
+                            reqList.Add(varData.Requirements);
                     }
 
+                    if (results.Count != 0)
+                    {
+                        var valsTable = newTable();
+                        foreach (var valItem in results)
+                        {
+                            if (valItem.Value.Count == 0) continue;
 
-                    var valsTable = newTable();
-                    foreach (var valItem in results)
+                            var reqsArray = newArray();
+                            foreach (var requirements in valItem.Value)
+                            {
+                                if (requirements.Count == 0) continue;
+                                var reqArr = newArray();
+                                if (serializeRequirements(requirements, reqArr, true))
+                                    reqsArray.Add(reqArr);
+                            }
+                            valsTable.Add(valItem.Key, reqsArray);
+                        }
+
+                        varTable.Add("results", valsTable);
+
+                        varsTable.Add(varsItem.Key.ToLower(), varTable);
+                        isAdded = true;
+                    }
+                }
+
+                if (isAdded)
+                    table.Add(scriptItem.Key.ToLower(), varsTable);
+            }
+
+            return getResult(table);
+        }
+
+
+        public string GlobalVariables()
+        {
+            Dictionary<string, Dictionary<string, List<QuestRequirementList>>> data = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var varItem in dataHandler.GlobalVariables)
+            {
+                if (MainConfig.OptimizeData && dataHandler.QuestObjects.TryGetValue(varItem.Key, out var qObj) && qObj is null) continue;
+
+                foreach (var varRes in varItem.Value)
+                {
+                    if (varRes.Requirements is null) continue;
+
+                    data.TryAdd(varItem.Key.ToLower(), new(StringComparer.OrdinalIgnoreCase));
+                    data[varItem.Key.ToLower()].TryAdd(varRes.ValueStr.ToLower(), new());
+                    data[varItem.Key.ToLower()][varRes.ValueStr.ToLower()].Add(varRes.Requirements);
+                }
+            }
+
+            var table = newTable();
+
+            foreach (var varItem in data)
+            {
+                var varTable = newTable();
+                bool isAdded = false;
+
+                var valsTable = newTable();
+
+                foreach (var varsItem in varItem.Value)
+                {
+                    var valName = varsItem.Key;
+                    var results = varsItem.Value;
+
+                    if (results.Count != 0)
                     {
                         var reqsArray = newArray();
-                        foreach (var requirements in valItem.Value)
+                        foreach (var requirements in results)
                         {
-                            reqsArray.Add(serializeRequirements(requirements, true));
+                            if (requirements.Count == 0) continue;
+                            var reqArr = newArray();
+                            if (serializeRequirements(requirements, reqArr, false))
+                            {
+                                reqsArray.Add(reqArr);
+                                isAdded = true;
+                            }
                         }
-                        valsTable.Add(valItem.Key, reqsArray);
+                        valsTable.Add(valName, reqsArray);
                     }
-
-                    varTable.Add("results", valsTable);
-
-                    varsTable.Add(varsItem.Key.ToLower(), varTable);
                 }
-                table.Add(scriptItem.Key.ToLower(), varsTable);
+
+                varTable.Add("results", valsTable);
+
+                if (isAdded)
+                    table.Add(varItem.Key.ToLower(), varTable);
             }
 
             return getResult(table);

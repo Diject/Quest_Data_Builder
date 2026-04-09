@@ -58,8 +58,6 @@ namespace Quest_Data_Builder.Config
 
         public static bool OptimizeData = true;
 
-        public static bool FindLinksBetweenDialogues = true;
-
         public static int DialogueSearchDepth = 2;
 
         public static int RoundFractionalDigits = 3;
@@ -522,11 +520,6 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.removeUnused is not null)
             {
                 RemoveUnused = (bool)configData.removeUnused;
-            }
-
-            if ((object)configData.findDialogueLinks is not null)
-            {
-                FindLinksBetweenDialogues = (bool)configData.findDialogueLinks;
             }
 
             if ((object)configData.dialogueSearchDepth is not null)

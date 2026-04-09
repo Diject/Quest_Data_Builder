@@ -223,6 +223,8 @@ namespace Quest_Data_Builder
                         MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
                     File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables." + MainConfig.OutputFileFormat]), jsonSer.LocalVariableDataByScriptId(),
                         MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                    File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "globalVariables." + MainConfig.OutputFileFormat]), jsonSer.GlobalVariables(),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
 
                     if (MainConfig.GenerateDialogueTopicRequirements)
                     {

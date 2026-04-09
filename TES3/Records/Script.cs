@@ -58,20 +58,12 @@ namespace Quest_Data_Builder.TES3.Records
                             }
                         case "SCVR":
                             {
-                                // some mods have ids that are longer than 32 characters, which causes overriding of the next data
-                                if (NumShorts > 47)
+                                List<string> vars = new();
+                                while (reader.Position < end)
                                 {
-                                    reader.Position = end;
-                                    break;
+                                    vars.Add(reader.ReadLimitedNullTerminatedString((int)(end - reader.Position)));
                                 }
-
-                                var varCount = NumShorts + NumLongs + NumFloats;
-                                string[] arr = new string[varCount];
-                                for (int i = 0; i < varCount; i++)
-                                {
-                                    arr[i] = reader.ReadNullTerminatedString();
-                                }
-                                _SCVR = arr;
+                                _SCVR = vars.ToArray();
                                 break;
                             }
                         case "SCDT":

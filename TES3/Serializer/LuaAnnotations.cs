@@ -19,12 +19,13 @@
 ---@field id string dialogue id
 ---@field requirements questDataGenerator.requirementBlock[]
 ---@field next integer[] possible next indexes
+---@field linked {[1]: string, [2]: integer}[]?
 ---@field nextIndex integer|nil following index
 ---@field finished boolean|nil finished flag
 ---@field restart boolean|nil restart flag
 
 
----@alias questDataGenerator.questData { name: string, links: string[]?, hasFinished: boolean?, [string]: questDataGenerator.stageData }
+---@alias questDataGenerator.questData { name: string, links: string[]?, givers: string[]?, hasFinished: boolean?, [string]: questDataGenerator.stageData }
 
 ---@alias questDataGenerator.quests table<string, questDataGenerator.questData>
 

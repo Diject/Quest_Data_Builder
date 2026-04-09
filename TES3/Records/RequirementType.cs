@@ -190,6 +190,7 @@
         public const string CustomRandom = "RND";
 
         public const string CustomDialogue = "DIA";
+        public const string CustomDialogueChoiceLink = "DCL";
 
         public const string CustomResistMagicka = "RMG";
         public const string CustomResistFire = "RFI";

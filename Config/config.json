@@ -60,10 +60,9 @@
 	//Downscale factor for height map image. 1 - full size (64x64 for one cell).
 	"heightMapImageDownscaleFactor": 2,
 
-	//Try to find information about dialogues that can open quest dialogues.
-	"findDialogueLinks": true,
-	//Maximum search depth.
+	//Maximum search depth for dialogue links.
 	"dialogueSearchDepth": 2,
-	//Do not save dialogue data for individual dialogues if there are too many.
+
+	//Remove some redundant data from the output files to reduce their size.
 	"optimizeData": true
 }

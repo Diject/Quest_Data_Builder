@@ -15,6 +15,7 @@ namespace Quest_Data_Builder.TES3
         public ConcurrentDictionary<string, ContainerRecord> Containers = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, CellRecord> Cells = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, RecordWithScript> RecordsWithScript = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, List<RecordWithScript>> RecordsWithScriptByScript = new(StringComparer.OrdinalIgnoreCase);
         public LeveledItemHandler LeveledItems = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, LeveledCreature> LeveledCreatures = new(StringComparer.OrdinalIgnoreCase);
         public ConcurrentDictionary<string, GlobalVariableRecord> GlobalVariables = new(StringComparer.OrdinalIgnoreCase);
@@ -30,6 +31,8 @@ namespace Quest_Data_Builder.TES3
                 if (record.Script is not null)
                 {
                     RecordsWithScript.TryAdd(record.Id, record);
+                    RecordsWithScriptByScript.TryAdd(record.Script, new());
+                    RecordsWithScriptByScript[record.Script].Add(record);
                 }
             }
 

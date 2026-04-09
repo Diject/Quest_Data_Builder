@@ -1,4 +1,6 @@
-﻿using Quest_Data_Builder.TES3.Records;
+﻿using Quest_Data_Builder.Config;
+using Quest_Data_Builder.TES3.Records;
+using Quest_Data_Builder.TES3.Script;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
@@ -131,31 +133,31 @@ namespace Quest_Data_Builder.TES3.Quest
                 var topicVar = topic.Variables.Find(a => a.DetailsValue == RequirementType.PreviousDialogChoice);
                 if (topicVar is not null)
                 {
-                    for (int i = topic.Parent.Topics.IndexOf(topic) + 1; i < topic.Parent.Topics.Count; i++)
+                    int groupId = 0;
+                    var choiceChain = new List<(string CurrentTopicId, string ParentTopicId)>();
+
+                    FindChoiceChain(topic, topicVar, ref groupId, choiceChain);
+
+                    if (choiceChain.Count > 1)
                     {
-                        var next = topic.Parent.Topics[i];
-
-                        if (!next.Variables.Exists(a => a.DetailsValue == RequirementType.PreviousDialogChoice) &&
-                            next.Result is not null &&
-                            ChoiceRegex().Match(next.Result).Success)
+                        if (MainConfig.OptimizeData)
                         {
-                            var matches = ChoiceArgumentsRegex().Matches(next.Result);
-                            var match = matches.FirstOrDefault(a => a.Groups.Count > 3 && int.Parse(a.Groups[3].Value) == topicVar.IntValue);
-                            if (match is not null)
+                            var link = choiceChain[0];
+                            var linkReq = new QuestRequirement();
+                            linkReq.Type = RequirementType.CustomDialogueChoiceLink;
+                            linkReq.ValueStr = link.CurrentTopicId;
+                            linkReq.Variable = link.ParentTopicId;
+                            this.Add(linkReq);
+                        }
+                        else
+                        {
+                            foreach (var link in choiceChain)
                             {
-                                foreach (var req in next.Variables)
-                                {
-                                    var requirement = new QuestRequirement(req);
-                                    this.Add(requirement);
-                                }
-
-                                var targetReq = this.FirstOrDefault(a => a.Type == RequirementType.PreviousDialogChoice);
-                                if (targetReq is not null)
-                                {
-                                    targetReq.Variable = match.Groups[2].Value;
-                                }
-                                
-                                break;
+                                var linkReq = new QuestRequirement();
+                                linkReq.Type = RequirementType.CustomDialogueChoiceLink;
+                                linkReq.ValueStr = link.CurrentTopicId;
+                                linkReq.Variable = link.ParentTopicId;
+                                this.Add(linkReq);
                             }
                         }
                     }
@@ -164,9 +166,108 @@ namespace Quest_Data_Builder.TES3.Quest
 
         }
 
+        /// <summary>
+        /// Recursively finds the chain of dialogue choices starting from a topic with PreviousDialogChoice requirement.
+        /// Also adds requirements from parent topics in the chain to the initial topic.
+        /// </summary>
+        private void FindChoiceChain(TopicRecord topic, SCVRVariable topicVar, ref int groupId, 
+            List<(string CurrentTopicId, string ParentTopicId)> chain, HashSet<string>? visitedTopics = null,
+            bool isInitialTopic = true)
+        {
+            visitedTopics ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (topic.Parent is null) return;
+            if (visitedTopics.Contains(topic.Id)) return;
+            visitedTopics.Add(topic.Id);
+
+            for (int i = topic.Parent.Topics.IndexOf(topic) + 1; i < topic.Parent.Topics.Count; i++)
+            {
+                var next = topic.Parent.Topics[i];
+
+                var hasPrevDiaChoiceReq = next.Variables.Exists(a => a.DetailsValue == RequirementType.PreviousDialogChoice);
+
+                if (groupId > 0 && hasPrevDiaChoiceReq)
+                    break;
+
+                if (next.Result is not null && ChoiceRegex().Match(next.Result).Success)
+                {
+                    ScriptBlock scriptBlock = new(next.Result);
+                    if (scriptBlock.FindChoiceFunction(topicVar.IntValue.ToString(), out var results))
+                    {
+                        foreach (var res in results)
+                        {
+                            if (next.Variables.Count > 0)
+                            {
+                                foreach (var req in next.Variables)
+                                {
+                                    var requirement = new QuestRequirement(req);
+                                    if (requirement.Type == RequirementType.PreviousDialogChoice) continue;
+                                    requirement.GroupId = groupId;
+                                    this.Add(requirement);
+                                }
+                            }
+                            else
+                            {
+                                var requirement = new QuestRequirement();
+                                requirement.GroupId = groupId;
+                                this.Add(requirement);
+                            }
+
+                            var targetReq = this.FirstOrDefault(a => a.Type == RequirementType.PreviousDialogChoice && a.Value == topicVar.IntValue);
+                            if (targetReq is not null)
+                            {
+                                targetReq.Variable = res.Text;
+                            }
+
+                            if (res.Requirements is not null)
+                                foreach (var req in res.Requirements)
+                                {
+                                    var r = (QuestRequirement)req.Clone();
+                                    r.GroupId = groupId;
+                                    this.Add(r);
+                                }
+
+                            chain.Add((topic.Id, next.Id));
+
+                            var nextTopicVar = next.Variables.Find(a => a.DetailsValue == RequirementType.PreviousDialogChoice);
+                            if (nextTopicVar is not null)
+                            {
+                                // Add requirements from the parent topic to the initial topic
+                                AddParentTopicRequirements(next, groupId);
+
+                                FindChoiceChain(next, nextTopicVar, ref groupId, chain, visitedTopics, isInitialTopic: false);
+                            }
+
+                            groupId++;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds requirements from a parent topic in the chain to the initial topic.
+        /// </summary>
+        private void AddParentTopicRequirements(TopicRecord parentTopic, int groupId)
+        {
+            foreach (var variable in parentTopic.Variables)
+            {
+                var requirement = new QuestRequirement(variable);
+                if (requirement.Type == RequirementType.PreviousDialogChoice) continue;
+
+                if (!requirement.IsPlayerRequirement && requirement.Object is null)
+                {
+                    requirement.Object = parentTopic.Actor;
+                }
+                if (parentTopic.Parent is not null)
+                    requirement.Dialogue = (parentTopic.Parent.Id, parentTopic.Id);
+
+                requirement.GroupId = groupId;
+                this.Add(requirement);
+            }
+        }
+
         [GeneratedRegex(@"choice .+?\d+", RegexOptions.IgnoreCase)]
         private static partial Regex ChoiceRegex();
-        [GeneratedRegex("(\\\"(.+?)\\\" (\\d+))+", RegexOptions.IgnoreCase)]
-        private static partial Regex ChoiceArgumentsRegex();
     }
 }
