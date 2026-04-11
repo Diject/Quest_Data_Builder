@@ -100,6 +100,7 @@ namespace Quest_Data_Builder.TES3
                 }
                 this.FixLinkChances();
                 this.FindNextStages();
+                this.OptimizeLinks();
             }
             catch (Exception ex)
             {
@@ -1300,5 +1301,78 @@ namespace Quest_Data_Builder.TES3
             });
         }
 
+
+        public void OptimizeLinks()
+        {
+            bool removeLinkFromObject(QuestObject qObject, string linkId, bool isContent = false, bool onlyObjects = true)
+            {
+                var linkObj = this.QuestObjects.GetValue(linkId);
+                if (linkObj is null || (onlyObjects && linkObj.Type != QuestObjectType.Object && linkObj.Type != QuestObjectType.Owner))
+                    return false;
+
+                if (isContent)
+                    linkObj.Links.Remove(qObject.ObjectId, out var _);
+                else
+                    linkObj.Contains.Remove(qObject.ObjectId, out var _);
+
+                return true;
+            }
+
+            if (MainConfig.MinLinkChance > 0)
+            {
+                Parallel.ForEach(this.QuestObjects.Values, (qObject, state) =>
+                {
+                    void removeLowChanceLinks(ConcurrentDictionary<string, ItemCount> links, bool isContent = false)
+                    {
+                        var linksToRemove = new ConcurrentHashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        foreach (var linkItem in links)
+                        {
+                            if (linkItem.Value.Chance == 0 || linkItem.Value.Chance > MainConfig.MinLinkChance) continue;
+                            linksToRemove.Add(linkItem.Key);
+                        }
+
+                        foreach (var linkId in linksToRemove)
+                        {
+                            if (removeLinkFromObject(qObject, linkId, isContent))
+                                links.Remove(linkId, out var _);
+                        }
+                    }
+
+                    removeLowChanceLinks(qObject.Links);
+                    removeLowChanceLinks(qObject.Contains, true);
+                });
+            }
+
+            void removeQuestObject(QuestObject qObject)
+            {
+                foreach (var linkId in qObject.Links.Keys)
+                {
+                    if (removeLinkFromObject(qObject, linkId, false, false))
+                        qObject.Links.TryRemove(linkId, out var _);
+                }
+                foreach (var linkId in qObject.Contains.Keys)
+                {
+                    if (removeLinkFromObject(qObject, linkId, true, false))
+                        qObject.Contains.TryRemove(linkId, out var _);
+                }
+                this.QuestObjects.TryRemove(qObject.ObjectId, out var _);
+            }
+
+            var questObjectsToRemove = new ConcurrentBag<QuestObject>();
+            foreach (var qObject in this.QuestObjects.Values)
+            {
+                if (qObject.Type != QuestObjectType.Local && qObject.Type != QuestObjectType.Global) continue;
+
+                if (qObject.TotalCount > MainConfig.LinkLimit)
+                {
+                    questObjectsToRemove.Add(qObject);
+                }
+            }
+
+            Parallel.ForEach(questObjectsToRemove, (qObject, state) =>
+            {
+                removeQuestObject(qObject);
+            });
+        }
     }
 }

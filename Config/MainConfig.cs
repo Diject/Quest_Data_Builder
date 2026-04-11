@@ -22,7 +22,11 @@ namespace Quest_Data_Builder.Config
     {
         public static InitializerType InitializerType = InitializerType.Manual;
 
-        public static int MaxObjectPositions = 50;
+        public static int MaxObjectPositions = 25;
+
+        public static double MinLinkChance = 0.25;
+
+        public static int LinkLimit = 100;
 
         public static Encoding FileEncoding
         {
@@ -515,6 +519,16 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.maxObjectPositions is not null)
             {
                 MaxObjectPositions = (int)configData.maxObjectPositions;
+            }
+
+            if ((object)configData.minLinkChance is not null)
+            {
+                MinLinkChance = (double)configData.minLinkChance;
+            }
+
+            if ((object)configData.linkLimit is not null)
+            {
+                LinkLimit = (int)configData.linkLimit;
             }
 
             if ((object)configData.removeUnused is not null)
