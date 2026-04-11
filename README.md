@@ -59,7 +59,11 @@ This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 	"ignoredDataFilePatterns": [],
 	
 	//Maximum number of game object positions to be saved in the output files.
-	"maxObjectPositions": 50,
+	"maxObjectPositions": 25,
+	//Remove from object links any records with a chance to get this object lower than this value.
+	"minLinkChance": 0.25,
+	//Records of certain types will be removed from the output data if they have more links than this limit.
+	"linkLimit": 100,
 	//Remove from output files any data that cannot be used by the mod.
 	"removeUnused": true,
 	//Number of decimal places for numbers in the output files.
@@ -74,12 +78,11 @@ This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 	"generateHeightMapImage": false,
 	//Downscale factor for height map image. 1 - full size (64x64 for one cell).
 	"heightMapImageDownscaleFactor": 2,
-	
-	//Try to find information about dialogues that can open quest dialogues.
-	"findDialogueLinks": true,
-	//Maximum search depth.
+
+	//Maximum search depth for dialogue links.
 	"dialogueSearchDepth": 2,
-	//Do not save dialogue data for individual dialogues if there are too many.
+
+	//Remove some redundant data from the output files to reduce their size.
 	"optimizeData": true
 }
 ```
