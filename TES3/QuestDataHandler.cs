@@ -898,8 +898,10 @@ namespace Quest_Data_Builder.TES3
                         if (String.Equals(actorDiaId, diaId, StringComparison.OrdinalIgnoreCase)) continue;
 
                         var diaLength = actorDiaId.Length;
-                        var threshold = diaLength <= 3 ? 0 : Math.Min(1 + diaLength / 5, 5);
-                        if ((1.0 - Fuzz.PartialRatio(actorDiaId, topicResponse) / 100.0) * diaLength <= threshold)
+                        var fuzzRes = Fuzz.PartialRatio(actorDiaId, topicResponse);
+
+                        if (diaLength < 4 && fuzzRes == 100 || diaLength >= 4 && diaLength < 20 && fuzzRes >= 80 ||
+                            diaLength >= 20 && fuzzRes >= 90)
                         {
                             var parentDia = dialogueObjects.Add(Consts.DialoguePrefix + diaId, QuestObjectType.Dialog);
                             if (parentDia is null) break;
