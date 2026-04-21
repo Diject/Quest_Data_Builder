@@ -63,6 +63,12 @@
 	"generateHeightMapImage": false,
 	//Downscale factor for height map image. 1 - full size (64x64 for one cell).
 	"heightMapImageDownscaleFactor": 2,
+	//Draw outline around landmasses.
+	"heightMapImageDrawOutline": false,
+	//Outline thickness.
+	"heightMapImageOutlineThickness": 1,
+	//Save height map as individual tiles (one image per 16x16 cells) instead of one big image.
+	"heightMapSaveAsTiles": false,
 
 	//Maximum search depth for dialogue links.
 	"dialogueSearchDepth": 2,
