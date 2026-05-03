@@ -68,9 +68,9 @@ namespace Quest_Data_Builder.TES3.Serializer
                             objPosTable.Add("id", objPos.ObjectId.ToLower());
 
                         var positionTable = newArray();
-                        positionTable.Add(objPos.Position.X);
-                        positionTable.Add(objPos.Position.Y);
-                        positionTable.Add(objPos.Position.Z);
+                        positionTable.Add(Math.Round((decimal)objPos.Position.X, MainConfig.RoundFractionalDigits));
+                        positionTable.Add(Math.Round((decimal)objPos.Position.Y, MainConfig.RoundFractionalDigits));
+                        positionTable.Add(Math.Round((decimal)objPos.Position.Z, MainConfig.RoundFractionalDigits));
                         objPosTable.Add("position", positionTable);
                         if (objPos.GridPosition is not null)
                         {
@@ -429,9 +429,9 @@ namespace Quest_Data_Builder.TES3.Serializer
                         var objPosTable = newTable();
 
                         var positionTable = newArray();
-                        positionTable.Add(pos.Position.X);
-                        positionTable.Add(pos.Position.Y);
-                        positionTable.Add(pos.Position.Z);
+                        positionTable.Add(Math.Round((decimal)pos.Position.X, MainConfig.RoundFractionalDigits));
+                        positionTable.Add(Math.Round((decimal)pos.Position.Y, MainConfig.RoundFractionalDigits));
+                        positionTable.Add(Math.Round((decimal)pos.Position.Z, MainConfig.RoundFractionalDigits));
                         objPosTable.Add("pos", positionTable);
                         if (pos.GridPosition is not null)
                         {
@@ -582,9 +582,9 @@ namespace Quest_Data_Builder.TES3.Serializer
                         objPosTable.Add("id", pos.ObjectId.ToLower());
 
                     var positionTable = newArray();
-                    positionTable.Add(pos.Position.X);
-                    positionTable.Add(pos.Position.Y);
-                    positionTable.Add(pos.Position.Z);
+                    positionTable.Add(Math.Round((decimal)pos.Position.X, MainConfig.RoundFractionalDigits));
+                    positionTable.Add(Math.Round((decimal)pos.Position.Y, MainConfig.RoundFractionalDigits));
+                    positionTable.Add(Math.Round((decimal)pos.Position.Z, MainConfig.RoundFractionalDigits));
                     objPosTable.Add("pos", positionTable);
                     if (pos.GridPosition is not null)
                     {
