@@ -10,6 +10,7 @@ namespace Quest_Data_Builder.TES3.Serializer
     internal class MapImageBuilder
     {
         private readonly RecordDataHandler _dataHandler;
+        private readonly string _directory;
 
         private const int version = 2;
 
@@ -24,13 +25,32 @@ namespace Quest_Data_Builder.TES3.Serializer
         public int PixelsPerCell => (int)(64.0 / MainConfig.HeightMapImageDownscaleFactor);
 
 
-        public MapImageBuilder(RecordDataHandler dataHandler)
+        public MapImageBuilder(RecordDataHandler dataHandler, string directory)
         {
             _dataHandler = dataHandler;
+            _directory = directory;
         }
 
+        public void ClearDirectory()
+        {
+            if (!Directory.Exists(_directory)) return;
 
-        public void BuildImage(string directory)
+            CustomLogger.WriteLine(LogLevel.Text, "Clearing old map images");
+
+            var mapPath = Path.Combine(_directory, "map.png");
+            if (File.Exists(mapPath))
+            {
+                File.Delete(mapPath);
+            }
+
+            var oldTiles = Directory.GetFiles(_directory, "(*,*).png");
+            foreach (var tile in oldTiles)
+            {
+                File.Delete(tile);
+            }
+        }
+
+        public void BuildImage()
         {
             CustomLogger.WriteLine(LogLevel.Text, "Building map image");
 
@@ -157,7 +177,7 @@ namespace Quest_Data_Builder.TES3.Serializer
             ImageWidth = imageWidth;
             ImageHeight = imageHeight;
 
-            CustomLogger.WriteLine(LogLevel.Text, $"Saving map image to {directory}");
+            CustomLogger.WriteLine(LogLevel.Text, $"Saving map image to {_directory}");
 
             if (MainConfig.HeightMapSaveAsTiles)
             {
@@ -195,13 +215,13 @@ namespace Quest_Data_Builder.TES3.Serializer
                             blockImage.Mutate(ctx => ctx.DrawImage(sourceCrop, new Point(destX, destY), 1f));
                         }
 
-                        blockImage.SaveAsPng(Path.Combine(directory, $"({blockX},{blockY}).png"));
+                        blockImage.SaveAsPng(Path.Combine(_directory, $"({blockX},{blockY}).png"));
                     }
                 }
             }
             else
             {
-                image.SaveAsPng(Path.Combine(directory, "map.png"));
+                image.SaveAsPng(Path.Combine(_directory, "map.png"));
             }
         }
 

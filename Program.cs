@@ -257,8 +257,9 @@ namespace Quest_Data_Builder
                         Directory.CreateDirectory(MainConfig.OutputDirectory);
                     }
 
-                    var mapImageBuilder = new MapImageBuilder(recordData[0]);
-                    mapImageBuilder.BuildImage(Path.GetFullPath(MainConfig.OutputDirectory));
+                    var mapImageBuilder = new MapImageBuilder(recordData[0], Path.GetFullPath(MainConfig.OutputDirectory));
+                    mapImageBuilder.ClearDirectory();
+                    mapImageBuilder.BuildImage();
 
                     File.WriteAllText(
                         Path.Combine([MainConfig.OutputDirectory, "mapInfo." + MainConfig.OutputFileFormat]),
