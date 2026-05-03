@@ -75,20 +75,33 @@ namespace Quest_Data_Builder.TES3
 
             try
             {
+                CustomLogger.WriteLine(LogLevel.Text, "Preparing data...");
                 this.fillData();
+                CustomLogger.WriteLine(LogLevel.Text, "Finding quests...");
                 this.findQuestContainingElements();
 
                 // the order should stay the same
+                CustomLogger.WriteLine(LogLevel.Text, "Filling quest data...");
                 this.FindQuestData();
+                CustomLogger.WriteLine(LogLevel.Text, "Finding global variables...");
                 this.FindVariables(); // to find global variables
+                CustomLogger.WriteLine(LogLevel.Text, "Expanding global variable requirements...");
                 this.ExpandGlobalVariableRequirements();
+                CustomLogger.WriteLine(LogLevel.Text, "Finding quest objects...");
                 this.FindQuestObjects();
+                CustomLogger.WriteLine(LogLevel.Text, "Finding local variables...");
                 this.FindVariables(); // to find local variables in scripts and topics
+                CustomLogger.WriteLine(LogLevel.Text, "Fixing variables in requirements...");
                 this.FixRequirementVarialesType();
+                CustomLogger.WriteLine(LogLevel.Text, "Finding quest object positions...");
                 this.FindQuestObjectPositions();
+                CustomLogger.WriteLine(LogLevel.Text, "Processing script texts...");
                 this.ProcessScriptTexts();
+                CustomLogger.WriteLine(LogLevel.Text, "Fixing quest object data...");
                 this.FixQuestObjectData();
+                CustomLogger.WriteLine(LogLevel.Text, "Finding links between quest objects...");
                 this.FindQuestObjectScriptLinks();
+                CustomLogger.WriteLine(LogLevel.Text, "Finding links to dialogs...");
                 try
                 {
                     this.FindLinksToDialogs();
@@ -98,8 +111,11 @@ namespace Quest_Data_Builder.TES3
                     CustomLogger.RegisterErrorException(ex);
                     CustomLogger.WriteLine(LogLevel.Error, ex.ToString());
                 }
+                CustomLogger.WriteLine(LogLevel.Text, "Fixing link chances...");
                 this.FixLinkChances();
+                CustomLogger.WriteLine(LogLevel.Text, "Finding next stages...");
                 this.FindNextStages();
+                CustomLogger.WriteLine(LogLevel.Text, "Optimizing links...");
                 this.OptimizeLinks();
             }
             catch (Exception ex)
@@ -113,6 +129,7 @@ namespace Quest_Data_Builder.TES3
             {
                 if (MainConfig.RemoveUnused)
                 {
+                    CustomLogger.WriteLine(LogLevel.Text, "Removing unused data...");
                     this.RemoveUnused();
                 }
             }
