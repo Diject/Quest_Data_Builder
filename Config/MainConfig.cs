@@ -64,7 +64,7 @@ namespace Quest_Data_Builder.Config
 
         public static int DialogueSearchDepth = 2;
 
-        public static int RoundFractionalDigits = 3;
+        public static int RoundFractionalDigits = 2;
 
         public static List<string>? IgnoredDataFilePatterns;
 
