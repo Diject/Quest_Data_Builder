@@ -22,7 +22,11 @@ namespace Quest_Data_Builder.Config
     {
         public static InitializerType InitializerType = InitializerType.Manual;
 
-        public static int MaxObjectPositions = 50;
+        public static int MaxObjectPositions = 25;
+
+        public static double MinLinkChance = 0.25;
+
+        public static int LinkLimit = 100;
 
         public static Encoding FileEncoding
         {
@@ -58,11 +62,9 @@ namespace Quest_Data_Builder.Config
 
         public static bool OptimizeData = true;
 
-        public static bool FindLinksBetweenDialogues = true;
-
         public static int DialogueSearchDepth = 2;
 
-        public static int RoundFractionalDigits = 3;
+        public static int RoundFractionalDigits = 2;
 
         public static List<string>? IgnoredDataFilePatterns;
 
@@ -76,6 +78,9 @@ namespace Quest_Data_Builder.Config
 
         public static bool GenerateHeightMapImage = false;
         public static double HeightMapImageDownscaleFactor = 2;
+        public static bool HeightMapImageDrawOutline = false;
+        public static int HeightMapImageOutlineThickness = 1;
+        public static bool HeightMapSaveAsTiles = false;
 
         public static SerializerType OutputFormatType = SerializerType.Json;
         public static string OutputFileFormat = "json";
@@ -519,14 +524,19 @@ namespace Quest_Data_Builder.Config
                 MaxObjectPositions = (int)configData.maxObjectPositions;
             }
 
+            if ((object)configData.minLinkChance is not null)
+            {
+                MinLinkChance = (double)configData.minLinkChance;
+            }
+
+            if ((object)configData.linkLimit is not null)
+            {
+                LinkLimit = (int)configData.linkLimit;
+            }
+
             if ((object)configData.removeUnused is not null)
             {
                 RemoveUnused = (bool)configData.removeUnused;
-            }
-
-            if ((object)configData.findDialogueLinks is not null)
-            {
-                FindLinksBetweenDialogues = (bool)configData.findDialogueLinks;
             }
 
             if ((object)configData.dialogueSearchDepth is not null)
@@ -626,6 +636,21 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.generateQuestData is not null)
             {
                 GenerateQuestData = (bool)configData.generateQuestData;
+            }
+
+            if ((object)configData.heightMapImageDrawOutline is not null)
+            {
+                HeightMapImageDrawOutline = (bool)configData.heightMapImageDrawOutline;
+            }
+
+            if ((object)configData.heightMapImageOutlineThickness is not null)
+            {
+                HeightMapImageOutlineThickness = (int)configData.heightMapImageOutlineThickness;
+            }
+
+            if ((object)configData.heightMapSaveAsTiles is not null)
+            {
+                HeightMapSaveAsTiles = (bool)configData.heightMapSaveAsTiles;
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");

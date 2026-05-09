@@ -8,27 +8,28 @@ namespace Quest_Data_Builder.TES3.Quest
         public string Id { get; private set; } = "";
         public string Type { get; private set; }
 
-        public TopicRecord Topic { get; private set; }
-        public uint? Index { get { return Topic.Index; } }
-        public string? QuestId { get { return Topic.Parent?.Id; } }
+        public readonly uint? Index;
+        public readonly string? QuestId;
 
-        public QuestContainingElement(TopicRecord itemWithQuestInfo, TopicRecord questTopic)
+        public QuestContainingElement(TopicRecord itemWithQuestInfo, string? questId, uint? questIndex)
         {
             if (itemWithQuestInfo.Parent?.Type == DialogType.Journal)
                 throw new Exception("Journal records cannot contain a quest info");
 
             Record = itemWithQuestInfo;
             Type = RecordType.Topic;
-            Topic = questTopic;
             Id = itemWithQuestInfo.Id;
+            QuestId = questId;
+            Index = questIndex;
         }
 
-        public QuestContainingElement(ScriptRecord itemWithQuestInfo, TopicRecord questTopic)
+        public QuestContainingElement(ScriptRecord itemWithQuestInfo, string? questId, uint? questIndex)
         {
             Record = itemWithQuestInfo;
             Type = RecordType.Script;
-            Topic = questTopic;
             Id = itemWithQuestInfo.Id;
+            QuestId = questId;
+            Index = questIndex;
         }
     }
 }

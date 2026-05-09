@@ -36,6 +36,13 @@ namespace Quest_Data_Builder.TES3.Script
         protected QuestRequirementList? _requirements;
 
         /// <summary>
+        /// Reversed requirements from "if (condition) Return endif" patterns.
+        /// Stored only at the head (top-level) block.
+        /// </summary>
+        public IReadOnlyList<QuestRequirement>? ReturnRequirements => _returnRequirements?.AsReadOnly();
+        protected List<QuestRequirement>? _returnRequirements;
+
+        /// <summary>
         /// Dictionary of local script variables.
         /// </summary>
         /// <value>Key is a variable name. Value is a variable type.</value>
@@ -163,7 +170,9 @@ namespace Quest_Data_Builder.TES3.Script
 
                         if (!string.IsNullOrEmpty(blockStr))
                         {
-                            innerBlocks.Add(new ScriptBlock(this, blockStr));
+                            var textBlock = new ScriptBlock(this, blockStr);
+                            textBlock.ApplyReturnRequirements();
+                            innerBlocks.Add(textBlock);
                             blockStr = string.Empty;
                         }
 
@@ -201,7 +210,19 @@ namespace Quest_Data_Builder.TES3.Script
 
                         var block = new ScriptBlock(parent, blockStr, lastLabelInfo.Value.type);
 
+                        block.ApplyReturnRequirements();
                         block.AddRequirements(lastRequirements);
+
+                        // Detect "if (condition) Return endif" pattern
+                        if (lastLabelInfo.Value.type == ScriptBlockType.If &&
+                            blockStr.Trim().Equals("return", StringComparison.OrdinalIgnoreCase))
+                        {
+                            foreach (var req in lastRequirements)
+                            {
+                                this.AddReturnRequirement(req);
+                            }
+                        }
+
                         lastRequirements.Clear();
 
                         innerBlocks.Add(block);
@@ -220,6 +241,7 @@ namespace Quest_Data_Builder.TES3.Script
 
                         var block = new ScriptBlock(parent, blockStr, lastLabelInfo.Value.type);
 
+                        block.ApplyReturnRequirements();
                         block.AddRequirements(lastRequirements);
 
                         // Reverse operator for the latest requirement. For "else" labels
@@ -258,6 +280,13 @@ namespace Quest_Data_Builder.TES3.Script
                 {
                     blockStr += string.IsNullOrEmpty(blockStr) ? line : Environment.NewLine + line;
                 }
+            }
+
+            if (!string.IsNullOrEmpty(blockStr) && innerBlocks.Count > 0)
+            {
+                var textBlock = new ScriptBlock(this, blockStr);
+                textBlock.ApplyReturnRequirements();
+                innerBlocks.Add(textBlock);
             }
         }
 
@@ -433,6 +462,31 @@ namespace Quest_Data_Builder.TES3.Script
         }
 
         /// <summary>
+        /// Adds a reversed copy of the requirement to the head block's return requirements.
+        /// Used when a "if (condition) Return endif" pattern is detected.
+        /// </summary>
+        public void AddReturnRequirement(QuestRequirement requirement)
+        {
+            var head = GetHead();
+            if (head is null) return;
+            head._returnRequirements ??= new();
+            var reversed = requirement.Duplicate();
+            reversed.ReverseOperator();
+            if (!head._returnRequirements.Exists(a => a.Equals(reversed)))
+                head._returnRequirements.Add(reversed);
+        }
+
+        /// <summary>
+        /// Copies return requirements from the head block to this block's requirements.
+        /// </summary>
+        public void ApplyReturnRequirements()
+        {
+            var head = GetHead();
+            if (head?._returnRequirements is null || head._returnRequirements.Count == 0) return;
+            AddRequirements(head._returnRequirements);
+        }
+
+        /// <summary>
         /// Add block to inner block
         /// </summary>
         /// <param name="block"></param>
@@ -593,6 +647,74 @@ namespace Quest_Data_Builder.TES3.Script
             return ret;
         }
 
+        public bool FindChoiceFunction(string? choiceId, out List<(QuestRequirementList? Requirements, ScriptBlock ScriptBlock, string Text)> results)
+        {
+            results = new();
+            return FindChoiceFunctionInside(choiceId, results, null);
+        }
+
+        private bool FindChoiceFunctionInside(string? choiceId, List<(QuestRequirementList? Requirements, ScriptBlock ScriptBlock, string Text)> results,
+            QuestRequirementList? pathRequirements)
+        {
+            pathRequirements ??= new();
+            if (this._requirements is not null)
+            {
+                pathRequirements.AddRange(this._requirements);
+            }
+            bool ret = false;
+
+            if (!this.IsContainBlocks)
+            {
+                ret = SearchChoiceInText(this.text, choiceId, results, pathRequirements, this) || ret;
+            }
+
+            foreach (var block in this.innerBlocks)
+            {
+                if (block.IsContainBlocks)
+                {
+                    var pathReq = new QuestRequirementList(pathRequirements);
+                    if (block._requirements is not null)
+                        pathReq.AddRange(block._requirements);
+                    ret = block.FindChoiceFunctionInside(choiceId, results!, pathReq) || ret;
+                    continue;
+                }
+                ret = SearchChoiceInText(block.text, choiceId, results, pathRequirements, block) || ret;
+            }
+            return ret;
+        }
+
+        private static bool SearchChoiceInText(string text, string? choiceId, 
+            List<(QuestRequirementList? Requirements, ScriptBlock ScriptBlock, string Text)> results,
+            QuestRequirementList pathRequirements, ScriptBlock block)
+        {
+            bool ret = false;
+            var matches = ChoiceRegex().Matches(text);
+            foreach (Match match in matches)
+            {
+                var choiceArgumentsMatches = ChoiceArgumentsRegex().Matches(match.Groups[1].Value);
+                foreach (Match choiceArgMatch in choiceArgumentsMatches)
+                {
+                    if (choiceId is null || choiceArgMatch.Groups[2].Value.Equals(choiceId))
+                    {
+                        results ??= new();
+                        var reqs = new QuestRequirementList(pathRequirements);
+                        if (block._requirements is not null)
+                            reqs.AddRange(block._requirements);
+                        reqs.ScriptBlock = block;
+                        results?.Add((reqs, block, choiceArgMatch.Groups[1].Value));
+                        ret = true;
+                    }
+                }
+            }
+            return ret;
+        }
+
+        [GeneratedRegex(@"choice[ ,](.+?)$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+        private static partial Regex ChoiceRegex();
+
+        [GeneratedRegex("\\\"(.+?)\\\"[, ]+(\\d+)", RegexOptions.IgnoreCase)]
+        private static partial Regex ChoiceArgumentsRegex();
+
 
         public bool UpdateToIncludeStartScriptData(RecordDataHandler recordHandler, QuestDataHandler questHandler)
         {
@@ -666,6 +788,18 @@ namespace Quest_Data_Builder.TES3.Script
         /// </summary>
         public ScriptBlock? ScriptBlock { get; set; }
 
+        private protected bool? _hasGroupedRequirements;
+        public bool HasGroppedRequirements
+        {
+            get
+            {
+                if (_hasGroupedRequirements is not null) return (bool)_hasGroupedRequirements;
+
+                _hasGroupedRequirements = this.Exists(a => a.GroupId is not null);
+                return (bool)_hasGroupedRequirements;
+            }
+        }
+
         public QuestRequirementList() { }
 
         public QuestRequirementList(IEnumerable<QuestRequirement> list) : base(list) { }
@@ -711,6 +845,100 @@ namespace Quest_Data_Builder.TES3.Script
         public bool IsContainsRequirementType(string type)
         {
             return this.Exists(a => a.Type == type);
+        }
+
+        public bool HasDialogueRequirementWithTopic(string topicId)
+        {
+            return this.Exists(a => a.Type == RequirementType.CustomDialogue && a.ValueStr == topicId);
+        }
+
+        public List<string>? GetContainedScriptIds()
+        {
+            List<string> ret = this.Where(r => r.Type == RequirementType.CustomScript).Select(r => r.Script!).ToList();
+            return ret.Count > 0 ? ret : null;
+        }
+
+        public bool IsDispositionOnlyRequirement()
+        {
+            return !this.Any(r => r.Type != RequirementType.CustomDialogue &&
+                r.Type != RequirementType.CustomDisposition &&
+                r.Type != RequirementType.CustomActor);
+        }
+
+        public bool IsDeadOnlyRequirement()
+        {
+            return !this.Any(r => r.Type != RequirementType.CustomDialogue &&
+                r.Type != RequirementType.Dead &&
+                r.Type != RequirementType.CustomActor);
+        }
+
+        public bool IsNextStage(string questId, uint index, ScriptVariables scrVars)
+        {
+            if (this.IsContainsJornalIndexRequirement(questId, index)) return true;
+
+            var copy = new QuestRequirementList(this);
+            for (var i = copy.Count - 1; i >= 0; i--)
+            {
+                var req = copy[i];
+                if (req.Type == RequirementType.CustomOnActivate || req.Type == RequirementType.CustomScript ||
+                    req.Type == RequirementType.CustomDisposition)
+                {
+                    copy.RemoveAt(i);
+                    continue;
+                }
+                else if (req.Type == RequirementType.CustomLocal && req.Variable is not null && req.Script is not null)
+                {
+                    if (req.Variable.Equals("doonce", StringComparison.OrdinalIgnoreCase))
+                    {
+                        copy.RemoveAt(i);
+                        continue;
+                    }
+
+                    var scrDt = scrVars.GetValue(req.Script);
+                    var vals = scrDt?.GetValue(req.Variable);
+                    if (vals is null || vals.Count == 0)
+                    {
+                        copy.RemoveAt(i);
+                        continue;
+                    }
+
+                    if (vals.Count == 1 || vals[0].Name.Equals(req.Variable, StringComparison.OrdinalIgnoreCase))
+                    {
+                        copy.RemoveAt(i);
+                        continue;
+                    }
+                }
+            }
+            if (copy.Count == 0) return true;
+
+            return copy.IsDeadOnlyRequirement() || copy.IsDeadOnlyRequirement();
+        }
+
+
+        public bool IsJournalOnlyRequirement(string questId)
+        {
+            return !this.Any(r => r.Type != RequirementType.Journal && r.Type != RequirementType.CustomDialogue &&
+                r.Type != RequirementType.CustomActor || (r.Type == RequirementType.Journal && !String.Equals(r.Variable, questId)));
+        }
+
+
+        public QuestRequirementList GetTypeRequirements(string type)
+        {
+            QuestRequirementList ret = new(this.Where(r => r.Type == type));
+            ret.ScriptBlock = this.ScriptBlock;
+            return ret;
+        }
+
+
+        public bool Equals(QuestRequirementList other)
+        {
+            if (other is null || this.Count != other.Count) return false;
+            foreach (var req in this)
+            {
+                if (!other.Exists(a => a.Equals(req)))
+                    return false;
+            }
+            return true;
         }
     }
 }

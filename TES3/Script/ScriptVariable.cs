@@ -1,4 +1,6 @@
-﻿namespace Quest_Data_Builder.TES3.Script
+﻿using System.Diagnostics;
+
+namespace Quest_Data_Builder.TES3.Script
 {
     enum ScriptVariableType
     {
@@ -71,6 +73,27 @@
             {
                 variable.AddRequirements(requirements);
             }
+        }
+
+
+        public bool? IsVarContainsJornalIndexRequirement(double? value, string questId, uint questIndex)
+        {
+            foreach (var varVal in this)
+            {
+                if (varVal.Value is not null)
+                {
+                    if (value == varVal.Value)
+                    {
+                        return varVal.Requirements?.IsContainsJornalIndexRequirement(questId, questIndex);
+                    }
+                }
+                else
+                {
+                    return varVal.Requirements?.IsContainsJornalIndexRequirement(questId, questIndex);
+                }
+            }
+
+            return null;
         }
     }
 

@@ -146,5 +146,11 @@ namespace Quest_Data_Builder.TES3.Records
                 }
             }
         }
+
+
+        public static string GetCellUniqueName(string? name, Vector3 position)
+        {
+            return String.IsNullOrEmpty(name) ? $"{(int)Math.Floor(position.X / 8192)}, {(int)Math.Floor(position.Y / 8192)}" : name;
+        }
     }
 }

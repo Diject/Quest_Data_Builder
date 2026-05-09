@@ -109,7 +109,7 @@ namespace Quest_Data_Builder.TES3.Script
                 {
                     ConditionConverter.UnfoundCommands.Add(commandStr);
                     requirement.Type = RequirementType.CustomLocal;
-                    requirement.Variable = commandStr;
+                    requirement.Variable = ((!String.IsNullOrEmpty(commandStr) ? (commandStr + " ") : "") + variableStr).Trim('(', ')').Trim();
                 }
                 else
                 {
@@ -117,7 +117,7 @@ namespace Quest_Data_Builder.TES3.Script
                 }
             }
 
-            if (!string.IsNullOrEmpty(variableStr))
+            if (!string.IsNullOrEmpty(variableStr) && requirement.Variable is null)
             {
                 requirement.Variable = variableStr;
             }

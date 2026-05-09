@@ -14,6 +14,7 @@ namespace Quest_Data_Builder.TES3.Quest
         Script = 4,
         Local = 5,
         Topic = 6,
+        Global = 7,
     }
 
     internal class QuestObject
@@ -57,6 +58,8 @@ namespace Quest_Data_Builder.TES3.Quest
         /// </summary>
         public int TotalCount = 0;
 
+        public readonly ConcurrentDictionary<string, dynamic> AdditionalData = new(StringComparer.OrdinalIgnoreCase);
+
         public QuestObject(string objectId)
         {
             ObjectId = objectId;
@@ -85,9 +88,11 @@ namespace Quest_Data_Builder.TES3.Quest
             }
         }
 
-        public void AddPosition(QuestObjectPosition position)
+        public void AddPosition(QuestObjectPosition position, bool updateCount = true)
         {
             Positions.Add(position);
+            if (updateCount)
+                this.TotalCount++;
         }
 
         public void AddContainedObjectId(QuestObject qObject, ItemCount? itemCount)

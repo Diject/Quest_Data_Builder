@@ -29,6 +29,12 @@ namespace Quest_Data_Builder.TES3.Quest
         /// </summary>
         public bool IsFunctionRequirement = false;
 
+        /// <summary>
+        /// For combining multiple QuestRequirement instances.
+        /// Equivalent to 'or' between different groups.
+        /// </summary>
+        public int? GroupId;
+
 
         const string playerId = "player";
 

@@ -223,6 +223,8 @@ namespace Quest_Data_Builder
                         MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
                     File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "localVariables." + MainConfig.OutputFileFormat]), jsonSer.LocalVariableDataByScriptId(),
                         MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
+                    File.WriteAllText(Path.Combine([MainConfig.OutputDirectory, "globalVariables." + MainConfig.OutputFileFormat]), jsonSer.GlobalVariables(),
+                        MainConfig.OutputFormatType == SerializerType.Yaml ? Encoding.UTF8 : MainConfig.FileEncoding);
 
                     if (MainConfig.GenerateDialogueTopicRequirements)
                     {
@@ -255,8 +257,9 @@ namespace Quest_Data_Builder
                         Directory.CreateDirectory(MainConfig.OutputDirectory);
                     }
 
-                    var mapImageBuilder = new MapImageBuilder(recordData[0]);
-                    mapImageBuilder.BuildImage(Path.Combine(Path.GetFullPath(MainConfig.OutputDirectory), "map.png"));
+                    var mapImageBuilder = new MapImageBuilder(recordData[0], Path.GetFullPath(MainConfig.OutputDirectory));
+                    mapImageBuilder.ClearDirectory();
+                    mapImageBuilder.BuildImage();
 
                     File.WriteAllText(
                         Path.Combine([MainConfig.OutputDirectory, "mapInfo." + MainConfig.OutputFileFormat]),
