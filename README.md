@@ -67,7 +67,7 @@ This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 	//Remove from output files any data that cannot be used by the mod.
 	"removeUnused": true,
 	//Number of decimal places for numbers in the output files.
-	"fractionDigits": 3,
+	"fractionDigits": 2,
 	//Number of stages in a quest (journal-type dialogue) for its information to be saved.
 	"stagesNumToAddQuestInfo": 1,
 
@@ -78,6 +78,12 @@ This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 	"generateHeightMapImage": false,
 	//Downscale factor for height map image. 1 - full size (64x64 for one cell).
 	"heightMapImageDownscaleFactor": 2,
+	//Draw outline around landmasses.
+	"heightMapImageDrawOutline": false,
+	//Outline thickness.
+	"heightMapImageOutlineThickness": 1,
+	//Save height map as individual tiles (one image per 16x16 cells) instead of one big image.
+	"heightMapSaveAsTiles": false,
 
 	//Maximum search depth for dialogue links.
 	"dialogueSearchDepth": 2,
