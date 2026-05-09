@@ -29,7 +29,7 @@ This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 	//Logging level. 0-3
 	"logLevel": 1,
 
-	//Encoding for game archives. 1250 - Polish version, 1251 - Russian version, 1252 - others.
+	//Encoding for game archives. 1250 - Polish version, 1251 - Russian version, 936 - Chinese version, 1252 - others.
 	"encoding": 1252,
 	//Directory for output files.
 	"output": "questData",
