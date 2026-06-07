@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 
 namespace Quest_Data_Builder.TES3.Script
 {
@@ -29,7 +30,7 @@ namespace Quest_Data_Builder.TES3.Script
             Requirements = requirements;
             BlockId = requirements?.ScriptBlock?.Id ?? -1;
 
-            if (double.TryParse(value, out var numberVal))
+            if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var numberVal))
             {
                 Value = numberVal;
             }
