@@ -24,7 +24,7 @@ namespace Quest_Data_Builder.Extentions
 
             if (eventInfo.Source.Type == typeof(double) || eventInfo.Source.Type == typeof(float))
             {
-                var number = Convert.ToDouble(eventInfo.Source.Value);
+                var number = Convert.ToDouble(eventInfo.Source.Value, CultureInfo.InvariantCulture);
                 var formatted = number % 1 == 0
                     ? number.ToString("0.0", CultureInfo.InvariantCulture)
                     : number.ToString("0.################", CultureInfo.InvariantCulture);

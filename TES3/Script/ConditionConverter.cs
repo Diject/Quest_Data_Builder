@@ -3,6 +3,7 @@ using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Quest;
 using Quest_Data_Builder.TES3.Records;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace Quest_Data_Builder.TES3.Script
 {
@@ -140,7 +141,7 @@ namespace Quest_Data_Builder.TES3.Script
             }
             else
             {
-                if (double.TryParse(valueStr, out var value))
+                if (double.TryParse(valueStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
                 {
                     requirement.Value = value;
                 }

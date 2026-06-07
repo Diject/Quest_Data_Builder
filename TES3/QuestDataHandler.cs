@@ -14,6 +14,7 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using YamlDotNet.Core;
+using System.Globalization;
 
 namespace Quest_Data_Builder.TES3
 {
@@ -998,9 +999,9 @@ namespace Quest_Data_Builder.TES3
                 foreach (Match match in repositionMatches)
                 {
                     string oId = match.Groups[1].Value;
-                    float posX = Convert.ToSingle(match.Groups[2].Value);
-                    float posY = Convert.ToSingle(match.Groups[3].Value);
-                    float posZ = Convert.ToSingle(match.Groups[4].Value);
+                    float posX = Convert.ToSingle(match.Groups[2].Value, CultureInfo.InvariantCulture);
+                    float posY = Convert.ToSingle(match.Groups[3].Value, CultureInfo.InvariantCulture);
+                    float posZ = Convert.ToSingle(match.Groups[4].Value, CultureInfo.InvariantCulture);
                     string? cellId = match.Groups[6].Value;
 
                     HashSet<string> objectIds = new();
