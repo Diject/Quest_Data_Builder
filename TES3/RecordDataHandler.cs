@@ -115,17 +115,19 @@ namespace Quest_Data_Builder.TES3
             {
                 foreach (var cellObject in cell.References)
                 {
-                    if (this.LeveledCreatures.TryGetValue(cellObject.ObjectId!, out var leveledCreature))
+                    if (cellObject.ObjectId is null) continue;
+
+                    if (this.LeveledCreatures.TryGetValue(cellObject.ObjectId, out var leveledCreature))
                     {
                         foreach (var creaId in leveledCreature.Creatures)
                         {
-                            if (objectsToFind.TryGetValue(creaId, out var questObject))
+                            if (creaId is not null && objectsToFind.TryGetValue(creaId, out var questObject))
                             {
                                 action(cell, cellObject, questObject);
                             }
                         }
                     }
-                    else if (objectsToFind.TryGetValue(cellObject.ObjectId!, out var questObject))
+                    else if (objectsToFind.TryGetValue(cellObject.ObjectId, out var questObject))
                     {
                         action(cell, cellObject, questObject);
                     }

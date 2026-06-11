@@ -134,8 +134,11 @@ namespace Quest_Data_Builder.TES3.Records
             this.IsDeleted |= newRecord.IsDeleted;
             foreach (var newRef in newRecord.References)
             {
+                if (newRef.ObjectId is null) continue;
+
                 var reference = this.References.FirstOrDefault(a => (a.Id == newRef.Id) &&
-                    (a.ObjectId!.Equals(newRef.ObjectId!, StringComparison.OrdinalIgnoreCase)));
+                    a.ObjectId is not null &&
+                    (a.ObjectId.Equals(newRef.ObjectId, StringComparison.OrdinalIgnoreCase)));
                 if (reference is not null)
                 {
                     reference.Merge(newRef);
