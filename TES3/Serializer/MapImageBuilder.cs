@@ -75,10 +75,10 @@ namespace Quest_Data_Builder.TES3.Serializer
             int imageWidth = (MaxGridX - MinGridX + 1) * 64;
             int imageHeight = (MaxGridY - MinGridY + 1) * 64;
 
-            using var image = new Image<Rgb24>(imageWidth, imageHeight);
+            using var image = new Image<Rgba32>(imageWidth, imageHeight);
             using var mask = new Image<L8>(imageWidth, imageHeight);
 
-            Rgb24 backgroundColor = GetColorForHeight(-8192);
+            Rgba32 backgroundColor = GetColorForHeight(-8192);
             for (int y = 0; y < imageHeight; y++)
             {
                 for (int x = 0; x < imageWidth; x++)
@@ -151,7 +151,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                     }
                 }
 
-                Rgb24 borderColor = GetColorForHeight(16384);
+                Rgba32 borderColor = GetColorForHeight(16384);
                 for (int y = 0; y < imageHeight; y++)
                 {
                     for (int x = 0; x < imageWidth; x++)
@@ -198,7 +198,7 @@ namespace Quest_Data_Builder.TES3.Serializer
                         var bounds = new Rectangle(0, 0, image.Width, image.Height);
                         var intersection = Rectangle.Intersect(cropRect, bounds);
 
-                        using Image<Rgb24> blockImage = new Image<Rgb24>(blockWidth, blockHeight);
+                        using Image<Rgba32> blockImage = new Image<Rgba32>(blockWidth, blockHeight);
                         for (int x = 0; x < blockWidth; x++)
                         {
                             for (int y = 0; y < blockHeight; y++)
@@ -237,6 +237,8 @@ namespace Quest_Data_Builder.TES3.Serializer
             table.Add("width", ImageWidth);
             table.Add("height", ImageHeight);
             table.Add("pixelsPerCell", (int)PixelsPerCell);
+            if (MainConfig.HeightMapUseAlphaChannelForWater)
+                table.Add("waterWithAlpha", true);
 
             var gridXTable = serializer.NewTable();
             var gridYTable = serializer.NewTable();
@@ -261,9 +263,9 @@ namespace Quest_Data_Builder.TES3.Serializer
         }
 
 
-        private static Rgb24 GetColorForHeight(float height)
+        private static Rgba32 GetColorForHeight(float height)
         {
-            float r, g, b;
+            float r, g, b, a = 255f;
             float heightData = height / 8;
             float clippedData = heightData / 2048;
             // I don't know why, but negative heights need to be multiplied by 8 to match the game colors
@@ -288,12 +290,13 @@ namespace Quest_Data_Builder.TES3.Serializer
             }
             else
             {
+                a = Math.Clamp(255f + clippedData * 255f, 0f, 255f);
                 r = 38.0f + clippedData * 14.0f;
                 g = 56.0f + clippedData * 20.0f;
                 b = 51.0f + clippedData * 18.0f;
             }
 
-            return new Rgb24((byte)r, (byte)g, (byte)b);
+            return new Rgba32((byte)r, (byte)g, (byte)b, (byte)a);
         }
     }
 }

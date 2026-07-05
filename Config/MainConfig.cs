@@ -81,6 +81,7 @@ namespace Quest_Data_Builder.Config
         public static bool HeightMapImageDrawOutline = false;
         public static int HeightMapImageOutlineThickness = 1;
         public static bool HeightMapSaveAsTiles = false;
+        public static bool HeightMapUseAlphaChannelForWater = true;
 
         public static SerializerType OutputFormatType = SerializerType.Json;
         public static string OutputFileFormat = "json";
@@ -651,6 +652,11 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.heightMapSaveAsTiles is not null)
             {
                 HeightMapSaveAsTiles = (bool)configData.heightMapSaveAsTiles;
+            }
+
+            if (((object)configData.heightMapUseAlphaChannelForWater is not null))
+            {
+                HeightMapUseAlphaChannelForWater = (bool)configData.heightMapUseAlphaChannelForWater;
             }
 
             CustomLogger.WriteLine(LogLevel.Info, "The configuration file has been loaded");
