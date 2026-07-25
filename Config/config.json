@@ -69,12 +69,21 @@
 	"heightMapImageOutlineThickness": 1,
 	//Save height map as individual tiles (one image per 16x16 cells) instead of one big image.
 	"heightMapSaveAsTiles": false,
-  //Use alpha channel for water in height map image.
+	//Use alpha channel for water in height map image.
 	"heightMapUseAlphaChannelForWater": true,
 
 	//Maximum search depth for dialogue links.
 	"dialogueSearchDepth": 2,
 
 	//Remove some redundant data from the output files to reduce their size.
-	"optimizeData": true
+	"optimizeData": true,
+
+	//Mods to suggest saving output files into their directories when initializing manually.
+	//"name" is shown in the prompt, and "file" is the mod file name to look for in the selected profile.
+	"targetMods": [
+		{
+			"name": "My mod",
+			"file": "my_mod.esp"
+		}
+	]
 }

@@ -3,6 +3,7 @@ using Quest_Data_Builder.Core;
 using Quest_Data_Builder.Initializer;
 using Quest_Data_Builder.Logger;
 using Quest_Data_Builder.TES3.Serializer;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,6 +17,12 @@ namespace Quest_Data_Builder.Config
         Auto,
         ConfigFile,
         Manual
+    }
+
+    public class TargetModEntry
+    {
+        public string Name { get; set; } = string.Empty;
+        public string File { get; set; } = string.Empty;
     }
 
     static class MainConfig
@@ -82,6 +89,8 @@ namespace Quest_Data_Builder.Config
         public static int HeightMapImageOutlineThickness = 1;
         public static bool HeightMapSaveAsTiles = false;
         public static bool HeightMapUseAlphaChannelForWater = true;
+
+        private static List<TargetModEntry>? targetMods;
 
         public static SerializerType OutputFormatType = SerializerType.Json;
         public static string OutputFileFormat = "json";
@@ -241,7 +250,7 @@ namespace Quest_Data_Builder.Config
 
                 void WriteAvailableHandlers()
                 {
-                    CustomLogger.WriteLine(LogLevel.Text, "\nSelect data source for Morrowind files:");
+                    CustomLogger.WriteLine(LogLevel.Text, "\n\nSelect data source for Morrowind files:");
                     for (int i = 0; i < handlers.Count; i++)
                     {
                         var handlerData = handlers[i];
@@ -313,7 +322,7 @@ namespace Quest_Data_Builder.Config
                         return false;
                     }
 
-                    CustomLogger.WriteLine(LogLevel.Text, "\nSelect a profile from the available profiles:");
+                    CustomLogger.WriteLine(LogLevel.Text, "\n\nSelect a profile from the available profiles:");
                     for (int i = 0; i < profileNames.Count; i++)
                     {
                         string currentMarker = String.Equals(profileNames[i], selectedHandler.CurrentProfile) ? "(current)" : "";
@@ -335,7 +344,7 @@ namespace Quest_Data_Builder.Config
                             string selectedProfile = profileNames[profileChoice - 1];
                             CustomLogger.WriteLine(LogLevel.Text, $"\nSelected profile: {selectedProfile}");
 
-                            var gameFiles = selectedHandler.GetFullGameFilePaths(selectedProfile);
+                            List<string>? gameFiles = selectedHandler.GetFullGameFilePaths(selectedProfile);
                             if (gameFiles is null || gameFiles.Count == 0)
                             {
                                 CustomLogger.WriteLine(LogLevel.Warn, "\nNo game files found in the selected profile.");
@@ -356,7 +365,7 @@ namespace Quest_Data_Builder.Config
 
                 if (GenerateQuestData)
                 {
-                    CustomLogger.WriteLine(LogLevel.Text, "\nSelect output format for data files:");
+                    CustomLogger.WriteLine(LogLevel.Text, "\n\nSelect output format for data files:");
                     CustomLogger.WriteLine(LogLevel.Text, "1. JSON (MWSE)");
                     CustomLogger.WriteLine(LogLevel.Text, "2. YAML (OpenMW)");
                     CustomLogger.WriteLine(LogLevel.Text, "3. Lua");
@@ -388,7 +397,7 @@ namespace Quest_Data_Builder.Config
                             };
 
                             CustomLogger.WriteLine(LogLevel.Text, $"\nSelected output format: {OutputFileFormat}");
-                            return true;
+                            break;
                         }
                         else
                         {
@@ -396,10 +405,51 @@ namespace Quest_Data_Builder.Config
                         }
                     }
                 }
-                else
+
+                if (MainConfig.targetMods is not null && MainConfig.targetMods.Count > 0 && Files is not null)
                 {
-                    return true;
+                    foreach (var targetMod in MainConfig.targetMods)
+                    {
+                        if (String.IsNullOrWhiteSpace(targetMod.File)) continue;
+
+                        var matchedFile = Files.FirstOrDefault(
+                            f => String.Equals(Path.GetFileName(f), targetMod.File, StringComparison.OrdinalIgnoreCase)
+                        );
+                        if (matchedFile is null) continue;
+
+                        string modDirectory = Path.GetDirectoryName(matchedFile)!;
+                        CustomLogger.WriteLine(LogLevel.Text, $"\n\nMod \"{targetMod.Name}\" found in the selected profile.");
+                        CustomLogger.WriteLine(LogLevel.Text, $"Save output files to its directory \"{modDirectory}\"? (y/1 - yes, n/0 - no):");
+
+                        bool? accepted = null;
+                        while (accepted is null)
+                        {
+                            string? input = Console.ReadLine();
+                            if (input is null || input.Trim() == "" || input.Trim().ToLower() == "n" || input.Trim() == "0")
+                            {
+                                accepted = false;
+                                CustomLogger.WriteLine(LogLevel.Text, "Output directory unchanged.");
+                            }
+                            else if (input.Trim().ToLower() == "y" || input.Trim() == "1")
+                            {
+                                accepted = true;
+                            }
+                            else
+                            {
+                                CustomLogger.WriteLine(LogLevel.Error, "Invalid choice. Please enter 'y' or '1' for yes, 'n' or '0' for no.");
+                            }
+                        }
+
+                        if (accepted == true)
+                        {
+                            OutputDirectory = Path.Combine(modDirectory, OutputDirectory ?? "");
+                            CustomLogger.WriteLine(LogLevel.Text, $"\nOutput directory set to \"{OutputDirectory}\".");
+                            break;
+                        }
+                    }
                 }
+
+                return true;
             }
 
 
@@ -429,6 +479,39 @@ namespace Quest_Data_Builder.Config
             else if (extension == ".yaml" && data is string[] yamlArray)
             {
                 res.AddRange(yamlArray);
+            }
+            return res;
+        }
+
+
+
+        private static List<TargetModEntry> GetConfigTargetModsData(object data, string extension)
+        {
+            List<TargetModEntry> res = new();
+            if (extension == ".json" && data is Newtonsoft.Json.Linq.JArray jsonArray)
+            {
+                foreach (var item in jsonArray.OfType<Newtonsoft.Json.Linq.JObject>())
+                {
+                    res.Add(new TargetModEntry
+                    {
+                        Name = item["name"]?.ToString() ?? string.Empty,
+                        File = item["file"]?.ToString() ?? string.Empty
+                    });
+                }
+            }
+            else if (extension == ".yaml" && data is System.Collections.IEnumerable enumerable && data is not string)
+            {
+                foreach (var item in enumerable)
+                {
+                    if (item is System.Collections.IDictionary dict)
+                    {
+                        res.Add(new TargetModEntry
+                        {
+                            Name = dict.Contains("name") ? dict["name"]?.ToString() ?? string.Empty : string.Empty,
+                            File = dict.Contains("file") ? dict["file"]?.ToString() ?? string.Empty : string.Empty
+                        });
+                    }
+                }
             }
             return res;
         }
@@ -617,6 +700,11 @@ namespace Quest_Data_Builder.Config
             if ((object)configData.ignoredDataFilePatterns is not null)
             {
                 IgnoredDataFilePatterns = GetConfigListData((object)configData.ignoredDataFilePatterns, extension!);
+            }
+
+            if ((object)configData.targetMods is not null)
+            {
+                targetMods = GetConfigTargetModsData((object)configData.targetMods, extension!);
             }
 
             if ((object)configData.generateHeightMapImage is not null)

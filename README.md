@@ -89,7 +89,16 @@ This project is based on [ESMSharp](https://github.com/demonixis/ESMSharp).
 	"dialogueSearchDepth": 2,
 
 	//Remove some redundant data from the output files to reduce their size.
-	"optimizeData": true
+	"optimizeData": true,
+
+	//Mods to suggest saving output files into their directories when initializing manually.
+	//"name" is shown in the prompt, and "file" is the mod file name to look for in the selected profile.
+	"targetMods": [
+		{
+			"name": "My mod",
+			"file": "my_mod.esp"
+		}
+	]
 }
 ```
 
