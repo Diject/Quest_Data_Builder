@@ -295,7 +295,10 @@ namespace Quest_Data_Builder.Initializer
                 return null;
             }
 
-            return FileLocator.ResolveFullFilePaths(profileData.content, profileData.data);
+            var directories = profileData.data.ToList();
+            directories.Reverse();
+
+            return FileLocator.ResolveFullFilePaths(profileData.content, directories);
         }
 
 
