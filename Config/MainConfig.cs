@@ -329,7 +329,7 @@ namespace Quest_Data_Builder.Config
                         CustomLogger.WriteLine(LogLevel.Text, $"{i + 1}. {profileNames[i]} {currentMarker}");
                     }
 
-                    CustomLogger.WriteLine(LogLevel.Text, "\nEnter the number of the profile to use, or 'q' to quit:");
+                    CustomLogger.WriteLine(LogLevel.Text, "\nEnter the number of the profile to use (enter 0 to select the current profile), or 'q' to quit:");
                     for (; ;)
                     {
                         string? profileInput = Console.ReadLine();
@@ -339,9 +339,9 @@ namespace Quest_Data_Builder.Config
                             return false;
                         }
 
-                        if (int.TryParse(profileInput, out int profileChoice) && profileChoice > 0 && profileChoice <= profileNames.Count)
+                        if (int.TryParse(profileInput, out int profileChoice) && profileChoice >= 0 && profileChoice <= profileNames.Count)
                         {
-                            string selectedProfile = profileNames[profileChoice - 1];
+                            string selectedProfile = profileChoice == 0 ? selectedHandler.CurrentProfile ?? "" : profileNames[profileChoice - 1];
                             CustomLogger.WriteLine(LogLevel.Text, $"\nSelected profile: {selectedProfile}");
 
                             List<string>? gameFiles = selectedHandler.GetFullGameFilePaths(selectedProfile);
